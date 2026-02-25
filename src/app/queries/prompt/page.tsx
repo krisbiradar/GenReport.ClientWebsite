@@ -28,7 +28,7 @@ export default function Prompt(): React.JSX.Element {
     useEffect(() => {
         dispatch(fetchUserProfile());
         // Simulate database status check
-      
+
 
         // Fetch examples from an API or define them here
         const fetchExamples = async () => {
@@ -40,7 +40,7 @@ export default function Prompt(): React.JSX.Element {
         fetchExamples();
     }, [dispatch]);
 
-    const handleSend = () => {  
+    const handleSend = () => {
         setLoading(true);
         // Simulate sending message
         setTimeout(() => {
@@ -84,7 +84,7 @@ export default function Prompt(): React.JSX.Element {
                         </DropdownMenu>
                     </div>
                     <div className="ml-auto flex items-center space-x-3">
-                        
+
                         <Avatar className="h-8 w-8 bg-gray-700">
                             {profileUrl ? (
                                 <AvatarImage src={profileUrl} alt={username} />
@@ -104,7 +104,7 @@ export default function Prompt(): React.JSX.Element {
                         </h1>
                     </div>
                     <div className="w-full max-w-2xl mt-4">
-                        {messages.map((message, index) => (
+                        {messages.map((message: { user: string; text: string }, index: number) => (
                             <div key={index} className={`p-2 rounded mb-2 ${message.user === "User" ? "bg-gray-600 self-end" : "bg-blue-600"}`}>
                                 {message.user}: {message.text}
                             </div>

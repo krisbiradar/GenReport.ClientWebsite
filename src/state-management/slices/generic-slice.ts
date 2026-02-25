@@ -1,5 +1,5 @@
 // src/redux/genericSlice.ts
-import container from '@/utils/di/inversify.config';
+import { container } from '@/utils/di/inversify.config';
 import { HttpErrorResponse } from '@/utils/models/shared/http-error-response';
 import { HttpSuccessResponse } from '@/utils/models/shared/http-success-response';
 import ApiClient from '@/utils/services/api-client';
@@ -14,7 +14,7 @@ interface GenericState<T extends object> {
 }
 
 // Generic function to create a slice
-export function createGenericSlice<T extends object>(name: string, endPoint: string, queryParams :URLSearchParams) {
+export function createGenericSlice<T extends object>(name: string, endPoint: string, queryParams: URLSearchParams) {
   const initialState: GenericState<T> = {
     data: null,
     status: 'idle',
@@ -22,14 +22,14 @@ export function createGenericSlice<T extends object>(name: string, endPoint: str
   };
 
   // Thunk to fetch data from the API
-  const fetchGenericData = createAsyncThunk<T|HttpErrorResponse>(`${name}/fetchData`, async () : Promise<T|HttpErrorResponse> => {
+  const fetchGenericData = createAsyncThunk<T | HttpErrorResponse>(`${name}/fetchData`, async (): Promise<T | HttpErrorResponse> => {
     const client = container.get(ApiClient);
-    let response  = await  client.sendHttpGet<T>(endPoint,queryParams)
-    if(response.successResponse){
-        return response.successResponse.data  ;
+    let response = await client.sendHttpGet<T>(endPoint, queryParams)
+    if (response.successResponse) {
+      return response.successResponse.data;
     }
-    console.error("Something went wrong",response.errorResponse);
-    return response.errorResponse || new HttpErrorResponse(HttpStatusCode.NotImplemented,"unknown error occured","UNKNOWN ERROR",[]);
+    console.error("Something went wrong", response.errorResponse);
+    return response.errorResponse || new HttpErrorResponse(HttpStatusCode.NotImplemented, "unknown error occured", "UNKNOWN ERROR", []);
   });
 
   const genericSlice = createSlice({
@@ -41,7 +41,7 @@ export function createGenericSlice<T extends object>(name: string, endPoint: str
         .addCase(fetchGenericData.pending, (state) => {
           state.status = 'loading';
         })
-        .addCase(fetchGenericData.fulfilled, (state,action) => {
+        .addCase(fetchGenericData.fulfilled, (state, action) => {
           state.status = 'succeeded';
           state.data = (action.payload as Draft<T>);
         })

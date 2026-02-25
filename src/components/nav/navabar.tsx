@@ -7,14 +7,14 @@ import { usePathname } from 'next/navigation';
 import { NavbarState } from '../../state-management/slices/menu-impl-slice';
 import { setAccess, showShadowScreen, hideShadowScreen } from '../../state-management/slices/menu-impl-slice';
 import Constants from '@/utils/static/constants';
-import {container} from '@/utils/di/inversify.config';
+import { container } from '@/utils/di/inversify.config';
 import DefaultStore from '@/state-management/store/app-store';
-    export default function Navbar(): React.JSX.Element {
+export default function Navbar(): React.JSX.Element {
     const store = container.get(DefaultStore);
     const dispatch = useDispatch();
     const pathname = usePathname();
-    
-    
+
+
     const { menuItems, access, loading, error, shadowScreenVisible } = useSelector(
         (state: NavbarState) => state
     );
@@ -22,15 +22,15 @@ import DefaultStore from '@/state-management/store/app-store';
     useEffect(() => {
         const hasAccess = !Constants.excludeNavBar.includes(pathname);
         dispatch(setAccess(hasAccess));
-        
-    }, [pathname,dispatch]);
 
-    if (!access) return null;
+    }, [pathname, dispatch]);
+
+    if (!access) return <></>;
 
     const handleMenuOpen = () => dispatch(showShadowScreen());
     const handleMenuClose = () => dispatch(hideShadowScreen());
 
-            return (
+    return (
         <>
             {/* Shadow Screen */}
             {shadowScreenVisible && (

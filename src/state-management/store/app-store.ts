@@ -2,6 +2,7 @@ import { configureStore, EnhancedStore, Reducer } from '@reduxjs/toolkit';
 import menuReducer from '../slices/menu-impl-slice';
 import userReducer from '../slices/user-slice';
 import chatReducer from '../slices/chat-slice';
+import authReducer from '../slices/auth-slice';
 
 export type RootState = ReturnType<DefaultStore['getState']>;
 export type AppDispatch = DefaultStore['dispatch'];
@@ -13,6 +14,7 @@ export default class DefaultStore {
     menu: menuReducer,
     user: userReducer,
     chat: chatReducer,
+    auth: authReducer,
   };
 
   constructor() {

@@ -1,4 +1,4 @@
-import  * as jwt from "jwt-decode";
+import * as jwt from "jwt-decode";
 import axios from "axios";
 import { env } from "process";
 
@@ -54,4 +54,10 @@ export async function getJwt() {
   return data.token;
 }
 
-export async function logOut() {}
+export async function logOut() {
+  // Clear auth cookies
+  document.cookie = "jwt-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  document.cookie = "jwt-refresh-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  // Redirect to login
+  window.location.href = "/onboarding/login";
+}

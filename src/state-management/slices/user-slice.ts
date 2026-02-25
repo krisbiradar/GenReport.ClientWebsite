@@ -12,7 +12,7 @@ const userSlice = createSlice({
         username: "",
         profileUrl: "",
         status: "idle",
-        error: null,
+        error: null as string | null,
     },
     reducers: {},
     extraReducers: (builder) => {
@@ -27,7 +27,7 @@ const userSlice = createSlice({
             })
             .addCase(fetchUserProfile.rejected, (state, action) => {
                 state.status = "failed";
-                state.error = action.error.message;
+                state.error = action.error.message ?? null;
             });
     },
 });
