@@ -4,10 +4,13 @@ import userReducer from '../slices/user-slice';
 import chatReducer from '../slices/chat-slice';
 import authReducer from '../slices/auth-slice';
 
+import { injectable } from 'inversify';
+
 export type RootState = ReturnType<DefaultStore['getState']>;
 export type AppDispatch = DefaultStore['dispatch'];
 
-export default class DefaultStore {
+@injectable()
+class DefaultStore {
   store: EnhancedStore | undefined;
   asyncReducers: any = {};
   staticReducers = {
@@ -46,6 +49,8 @@ export default class DefaultStore {
     return this.store?.dispatch(action);
   };
 }
+
+export default DefaultStore;
 
 
 

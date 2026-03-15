@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Settings, History, ChevronLeft, ChevronRight, LogOut, Menu } from 'lucide-react';
+import { ChevronLeft, LogOut, Menu } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logOut } from '@/utils/helpers/window-helpers';
 import { Button } from '@/components/ui/button';
-import { useSelector } from 'react-redux';
-import { NavbarState } from '@/state-management/slices/menu-impl-slice';
+import { container } from '@/utils/di/inversify.config';
+import SidebarService, { SidebarItem } from '@/utils/services/sidebar-service';
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -13,33 +14,36 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
-  const location = useLocation();
-  const menuItems = useSelector((state: { navbar: NavbarState }) => state.navbar?.menuItems || []);
+  const [navItems, setNavItems] = useState<SidebarItem[]>([]);
+  const sidebarService = container.get(SidebarService);
 
-  const defaultItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Recent Reports', path: '#reports', icon: FileText },
-    { name: 'Action History', path: '#history', icon: History },
-    { name: 'Settings', path: '#settings', icon: Settings },
-  ];
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const response = await sidebarService.getSidebarItems();
+        if (response.successResponse) {
+          setNavItems(response.successResponse.data);
+        } else {
+             // Fallback for dev if needed
+             if (response.errorResponse?.errorCode === "NO_RESPONSE") {
+                 setNavItems([
+                     { id: "1", title: "Dashboard", description: "Main dashboard", iconClass: "LayoutDashboard" },
+                     { id: "2", title: "Connections", description: "Database connections", iconClass: "Database" }
+                 ]);
+             }
+        }
+      } catch (error) {
+        console.error("Failed to fetch sidebar items", error);
+      }
+    };
+    fetchItems();
+  }, []);
 
-  // Map dynamic items to specific lucide icons if possible
-  const iconMap: Record<string, any> = {
-    'Dashboard': LayoutDashboard,
-    'Reports': FileText,
-    'History': History,
-    'Settings': Settings,
-    'Connections': Settings, // or Database, but Settings is safe
+  const getPath = (title: string) => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle === 'dashboard') return '/';
+    return `/${lowerTitle.replace(/\s+/g, '-')}`;
   };
-
-  // If redux is empty, use default items. Otherwise use mapped remote items.
-  const navItems = menuItems.length > 0 
-    ? menuItems.map(m => ({ 
-        name: m.label, 
-        path: m.link || '#', 
-        icon: iconMap[m.label] || FileText 
-      }))
-    : defaultItems;
 
   return (
     <aside
@@ -67,21 +71,23 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
       <nav className="flex-1 overflow-y-auto py-6">
         <ul className="space-y-2 px-3">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || location.hash === item.path;
+            const path = getPath(item.title);
+            const isActive = location.pathname.startsWith(path) && (path !== '/' || location.pathname === '/');
+            const IconComponent = (LucideIcons as any)[item.iconClass] || LucideIcons.FileText;
             
             return (
-              <li key={item.name}>
+              <li key={item.id}>
                 <Link
-                  to={item.path}
+                  to={path}
                   className={cn(
                     "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-primary/10 hover:text-primary",
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground",
                     isCollapsed && "justify-center px-0"
                   )}
-                  title={isCollapsed ? item.name : undefined}
+                  title={isCollapsed ? item.title : item.description}
                 >
-                  <item.icon className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
-                  {!isCollapsed && <span className="animate-fadeIn">{item.name}</span>}
+                  <IconComponent className={cn("h-5 w-5", isActive ? "text-primary" : "text-muted-foreground")} />
+                  {!isCollapsed && <span className="animate-fadeIn">{item.title}</span>}
                 </Link>
               </li>
             );

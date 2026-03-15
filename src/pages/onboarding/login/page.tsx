@@ -21,6 +21,7 @@ import { container } from "@/utils/di/inversify.config"
 import AuthService from "@/utils/services/auth-service"
 import { setJwt } from "@/utils/helpers/window-helpers"
 import { setAuth } from "@/state-management/slices/auth-slice"
+import { showPopup } from "@/utils/helpers/popup-helper"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
@@ -51,30 +52,30 @@ export default function LoginPage() {
                 lastName: data.lastName,
               })
             )
-            toast({
+            showPopup({
               title: "Welcome back!",
-              description: "You have been logged in successfully.",
+              body: "You have been logged in successfully.",
+              type: "success"
             })
             navigate("/")
           } else if (res?.errorResponse) {
-            toast({
-              variant: "destructive",
-              title: "Login failed",
-              description:
-                res.errorResponse.message || "Invalid email or password.",
+            showPopup({
+              title: "Login Failed",
+              body: res.errorResponse.message || "Invalid email or password. Please try again.",
+              type: "error"
             })
           } else {
-            toast({
-              variant: "destructive",
-              title: "Login failed",
-              description: "Something went wrong. Please try again.",
+            showPopup({
+              title: "Login Failed",
+              body: "Something went wrong. Please check your connection and try again.",
+              type: "error"
             })
           }
-        } catch {
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Unable to connect to the server.",
+        } catch (error) {
+          showPopup({
+            title: "Network Error",
+            body: "Unable to connect to the server. Please ensure the backend is running.",
+            type: "error"
           })
         } finally {
           setIsLoading(false)

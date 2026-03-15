@@ -5,8 +5,20 @@ import { RecentReports } from "@/components/dashboard/recent-reports";
 import { Activity, Users, ShieldAlert, Cpu } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { AuthState } from "@/state-management/slices/auth-slice";
+
 export default function HomePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const isAuthenticated = useSelector((state: { auth: AuthState }) => state.auth.isAuthenticated);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login");
+    }
+  }, [isAuthenticated, navigate]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

@@ -14,7 +14,7 @@ export default function ConnectionsPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
 
@@ -31,10 +31,10 @@ export default function ConnectionsPage() {
         // Fallback or Handle Error gracefully
         // For development/showcase purposes before API is built, setting mock data:
         if (!res.successResponse && res.errorResponse?.errorCode === "NO_RESPONSE") {
-             setConnections([
-               { id: "1", name: "Production DB", databaseType: "PostgreSQL", hostName: "prod.db.internal", port: 5432, userName: "admin_report", databaseName: "genreport_prod" },
-               { id: "2", name: "Staging Replica", databaseType: "MySQL", hostName: "stage.replica.net", port: 3306, userName: "stage_user", databaseName: "genreport_staging" }
-             ]);
+          setConnections([
+            { id: "1", name: "Production DB", alias: "prod", databaseType: "PostgreSQL", hostName: "prod.db.internal", port: 5432, userName: "admin_report", databaseName: "genreport_prod", connectionString: "Server=prod.db.internal;Port=5432;Database=genreport_prod;User Id=admin_report;" },
+            { id: "2", name: "Staging Replica", alias: "stage", databaseType: "MySQL", hostName: "stage.replica.net", port: 3306, userName: "stage_user", databaseName: "genreport_staging", connectionString: "Server=stage.replica.net;Port=3306;Database=genreport_staging;Uid=stage_user;" }
+          ]);
         }
       }
     } catch (e) {
@@ -68,10 +68,10 @@ export default function ConnectionsPage() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
-      
+
       <main className="flex-1 overflow-y-auto w-full bg-muted/10">
         <div className="container p-6 md:p-8 space-y-8 animate-fadeIn max-w-[1400px] mx-auto">
-          
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl font-bold tracking-tight">Database Connections</h1>
@@ -83,22 +83,22 @@ export default function ConnectionsPage() {
               <Plus className="h-4 w-4" /> Add Connection
             </Button>
           </div>
-          
+
           {isLoading ? (
             <div className="flex items-center justify-center p-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : connections.length === 0 ? (
-             <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed">
-                <Database className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                <h3 className="text-xl font-medium">No Connections Found</h3>
-                <p className="text-muted-foreground mt-2 max-w-sm">
-                  You haven't configured any database connections yet. Add one to start generating reports.
-                </p>
-                <Button onClick={handleCreateNew} variant="outline" className="mt-6 gap-2">
-                  <Plus className="h-4 w-4" /> Add your first connection
-                </Button>
-             </Card>
+            <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed">
+              <Database className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+              <h3 className="text-xl font-medium">No Connections Found</h3>
+              <p className="text-muted-foreground mt-2 max-w-sm">
+                You haven't configured any database connections yet. Add one to start generating reports.
+              </p>
+              <Button onClick={handleCreateNew} variant="outline" className="mt-6 gap-2">
+                <Plus className="h-4 w-4" /> Add your first connection
+              </Button>
+            </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {connections.map((conn) => (
@@ -144,9 +144,9 @@ export default function ConnectionsPage() {
                         Connected
                       </span>
                     </div>
-                    <Button 
-                      variant="secondary" 
-                      size="sm" 
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       className="w-full"
                       onClick={() => navigate(`/connections/${conn.id}`)}
                     >
@@ -160,11 +160,11 @@ export default function ConnectionsPage() {
 
         </div>
       </main>
-      
+
       {isModalOpen && (
-        <ConnectionModal 
-          connection={editingConnection} 
-          onClose={handleModalClose} 
+        <ConnectionModal
+          connection={editingConnection}
+          onClose={handleModalClose}
         />
       )}
     </div>

@@ -8,7 +8,7 @@ import { injectable } from "inversify";
 import Constants from "../static/constants";
 
 @injectable()
-export default class ApiClient {
+class ApiClient {
   instance: AxiosInstance | undefined;
   constructor() {
     this.instance = axios.create({
@@ -184,3 +184,5 @@ export default class ApiClient {
     }
   }
 }
+
+export default ApiClient;

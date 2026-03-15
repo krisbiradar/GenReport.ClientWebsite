@@ -28,6 +28,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/connections" element={<ConnectionsPage />} />
             <Route path="/connections/:id" element={<ConnectionDetailsPage />} />
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding/login" element={<LoginPage />} />
             <Route path="/queries/prompt" element={<PromptPage />} />
           </Routes>
