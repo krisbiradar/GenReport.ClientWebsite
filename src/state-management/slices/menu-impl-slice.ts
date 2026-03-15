@@ -31,12 +31,15 @@ export const navbarSlice = createSlice({
         hideShadowScreen: (state) => {
             state.shadowScreenVisible = false;
         },
+        setMenuItems: (state, action: PayloadAction<MenuItem[]>) => {
+            state.menuItems = action.payload;
+        },
     },
 });
 
 
 
-export const { setAccess, showShadowScreen, hideShadowScreen } = navbarSlice.actions;
+export const { setAccess, showShadowScreen, hideShadowScreen, setMenuItems } = navbarSlice.actions;
 export default navbarSlice.reducer;
 
 interface MenuItem {

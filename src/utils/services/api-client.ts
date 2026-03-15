@@ -1,20 +1,21 @@
 import axios, { AxiosError, AxiosInstance, HttpStatusCode } from "axios";
 import { HttpResponse } from "../models/shared/http-response";
-import { env } from "process";
+
 import { getJwt } from "../helpers/window-helpers";
+import { showPopup } from "../helpers/popup-helper";
 import { HttpErrorResponse } from "../models/shared/http-error-response";
+import { injectable } from "inversify";
 import Constants from "../static/constants";
 
+@injectable()
 export default class ApiClient {
   instance: AxiosInstance | undefined;
   constructor() {
     this.instance = axios.create({
-      baseURL: env.BASE_URL, // Replace with your base URL
-      timeout: Number.parseInt(env.REQUEST_TIMEOUT || "5000"), // Set a default timeout (in milliseconds)
+      baseURL: import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL || "", // Replace with your base URL
+      timeout: Number.parseInt((import.meta.env.VITE_REQUEST_TIMEOUT || import.meta.env.REQUEST_TIMEOUT) as string || "5000"), // Set a default timeout (in milliseconds)
       headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE,PATCH,OPTIONS'
+        'Content-Type': 'application/json'
       },
 
     });
@@ -22,7 +23,19 @@ export default class ApiClient {
     this.instance?.interceptors.request.use(this.addJwtToHeaders);
     this.instance?.interceptors.response.use(
       response => response, // On success, just return the response
-      error => error.response
+      error => {
+        if (error.response?.status === HttpStatusCode.Forbidden) {
+          showPopup({
+            title: "Access Denied",
+            body: "You do not have permission to access or modify this resource.",
+            type: "error",
+            onClose: () => {
+              window.history.back();
+            }
+          });
+        }
+        return error.response;
+      }
     );
   }
 

@@ -1,8 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { useDispatch } from "react-redux"
 
 import { Button } from "@/components/ui/button"
@@ -25,7 +24,7 @@ import { setAuth } from "@/state-management/slices/auth-slice"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
-  const router = useRouter()
+  const navigate = useNavigate()
   const dispatch = useDispatch()
   const { toast } = useToast()
   const authService = container.get(AuthService)
@@ -43,7 +42,7 @@ export default function LoginPage() {
           if (res?.successResponse) {
             const data = res.successResponse.data
             setJwt("jwt-token", data.token)
-            setJwt("jwt-refresh-token", data.refreshToken)
+            setJwt("jwt-refresh-token", data.refreshtoken)
             dispatch(
               setAuth({
                 role: data.role,
@@ -56,7 +55,7 @@ export default function LoginPage() {
               title: "Welcome back!",
               description: "You have been logged in successfully.",
             })
-            router.push("/")
+            navigate("/")
           } else if (res?.errorResponse) {
             toast({
               variant: "destructive",
@@ -182,12 +181,6 @@ export default function LoginPage() {
                         Remember me
                       </span>
                     </label>
-                    <Link
-                      href="/onboarding/reset-password"
-                      className="text-sm text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Forgot password?
-                    </Link>
                   </div>
                 </div>
 
@@ -207,17 +200,7 @@ export default function LoginPage() {
                 </Button>
               </form>
             </CardContent>
-            <CardFooter className="px-0 pb-0 pt-4">
-              <p className="text-sm text-muted-foreground text-center w-full">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/onboarding/signup"
-                  className="text-primary hover:text-primary/80 font-medium transition-colors"
-                >
-                  Create account
-                </Link>
-              </p>
-            </CardFooter>
+
           </div>
         </Card>
       </div>

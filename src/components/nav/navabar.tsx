@@ -3,7 +3,7 @@
 
 import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { NavbarState } from '../../state-management/slices/menu-impl-slice';
 import { setAccess, showShadowScreen, hideShadowScreen } from '../../state-management/slices/menu-impl-slice';
 import Constants from '@/utils/static/constants';
@@ -12,7 +12,8 @@ import DefaultStore from '@/state-management/store/app-store';
 export default function Navbar(): React.JSX.Element {
     const store = container.get(DefaultStore);
     const dispatch = useDispatch();
-    const pathname = usePathname();
+    const location = useLocation();
+    const pathname = location.pathname;
 
 
     const { menuItems, access, loading, error, shadowScreenVisible } = useSelector(

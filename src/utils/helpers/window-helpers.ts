@@ -1,6 +1,5 @@
 import * as jwt from "jwt-decode";
 import axios from "axios";
-import { env } from "process";
 
 export function getCookie(name: string) {
   const cookies = document.cookie.split(";");
@@ -40,17 +39,17 @@ export async function getJwt() {
   if (existingToken) {
     return existingToken;
   }
-  const baseURL = env.BASE_URL;
+  const baseURL = import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL || "";
   const refreshToken = getCookie("jwt-refresh-token");
   if (!refreshToken) {
     await logOut();
     return;
   }
-  const { data } = await axios.get<{ token: string; refreshToken: string }>(
+  const { data } = await axios.get<{ token: string; refreshtoken: string }>(
     `${baseURL}/refresh?token=${refreshToken}`
   );
   setJwt("jwt-token", data.token);
-  setJwt("jwt-refresh-token", data.refreshToken);
+  setJwt("jwt-refresh-token", data.refreshtoken);
   return data.token;
 }
 
