@@ -1,15 +1,14 @@
 "use client"
 
-import React, { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { useDispatch } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -20,17 +19,24 @@ import { loginSchema } from "@/utils/validations/login-validation"
 import { container } from "@/utils/di/inversify.config"
 import AuthService from "@/utils/services/auth-service"
 import { setJwt } from "@/utils/helpers/window-helpers"
-import { setAuth } from "@/state-management/slices/auth-slice"
+import { AuthState, setAuth } from "@/state-management/slices/auth-slice"
 import { showPopup } from "@/utils/helpers/popup-helper"
-import { useToast } from "@/components/ui/use-toast"
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { toast } = useToast()
+  const isAuthenticated = useSelector(
+    (state: { auth: AuthState }) => state.auth.isAuthenticated
+  )
   const authService = container.get(AuthService)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/")
+    }
+  }, [isAuthenticated, navigate])
 
   const { values, touched, errors, handleBlur, handleChange, handleSubmit } =
     useFormik({
@@ -43,10 +49,11 @@ export default function LoginPage() {
           if (res?.successResponse) {
             const data = res.successResponse.data
             setJwt("jwt-token", data.token)
-            setJwt("jwt-refresh-token", data.refreshtoken)
+            setJwt("jwt-refresh-token", data.refreshtoken ?? data.refreshToken)
             dispatch(
               setAuth({
-                role: data.role,
+                role: data.role ?? null,
+                roleId: data.roleId ?? null,
                 email: data.email,
                 firstName: data.firstName,
                 lastName: data.lastName,
@@ -57,7 +64,6 @@ export default function LoginPage() {
               body: "You have been logged in successfully.",
               type: "success"
             })
-            navigate("/")
           } else if (res?.errorResponse) {
             showPopup({
               title: "Login Failed",

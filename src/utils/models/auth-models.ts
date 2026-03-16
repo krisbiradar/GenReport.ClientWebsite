@@ -16,7 +16,9 @@ export interface SignupRequest {
 export interface AuthResponse {
     token: string;
     refreshToken: string;
-    role: UserRole;
+    refreshtoken?: string;
+    role: UserRole | string;
+    roleId?: number;
     email: string;
     firstName: string;
     lastName: string;

@@ -4,7 +4,6 @@ import ApiClient from "./api-client";
 export interface DatabaseConnection {
     id: string;
     name: string;
-    alias: string;
     databaseType: string;
     hostName: string;
     port: number;
@@ -17,7 +16,6 @@ export interface DatabaseConnection {
 
 export interface CreateDatabaseConnectionRequest {
     name: string;
-    alias: string;
     databaseType: string;
     hostName: string;
     port: number;
@@ -28,6 +26,26 @@ export interface CreateDatabaseConnectionRequest {
 }
 
 import { injectable, inject } from "inversify";
+
+enum DbProvider {
+    NpgSql = 1,
+    SqlClient = 2,
+    MySqlConnector = 3,
+    Oracle = 4,
+    MongoClient = 5,
+}
+
+const DB_PROVIDER_BY_DATABASE_TYPE: Record<string, DbProvider> = {
+    PostgreSQL: DbProvider.NpgSql,
+    SQLServer: DbProvider.SqlClient,
+    MySQL: DbProvider.MySqlConnector,
+    Oracle: DbProvider.Oracle,
+    MongoDB: DbProvider.MongoClient,
+};
+
+const mapDatabaseTypeToDbProvider = (databaseType: string): DbProvider => {
+    return DB_PROVIDER_BY_DATABASE_TYPE[databaseType] ?? DbProvider.NpgSql;
+};
 
 @injectable()
 class ConnectionService {
@@ -40,7 +58,7 @@ class ConnectionService {
     }
 
     async createConnection(request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: request.databaseType };
+        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPost<HttpResponse<DatabaseConnection>>(
             payload,
             "connections"
@@ -48,7 +66,7 @@ class ConnectionService {
     }
 
     async updateConnection(id: string, request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: request.databaseType };
+        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPut<HttpResponse<DatabaseConnection>>(
             `connections/${id}`,
             payload
@@ -56,7 +74,7 @@ class ConnectionService {
     }
 
     async testConnection(request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: request.databaseType };
+        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPost<HttpResponse<any>>(
             payload,
             "connections/test"

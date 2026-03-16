@@ -29,7 +29,7 @@ interface CookieOptions {
 }
 export function setJwt(name: string, value: string) {
   const decodedToken = jwt.jwtDecode(value);
-  const expirationTime = decodedToken.exp || 0 * 1000; // Convert to milliseconds
+  const expirationTime = (decodedToken.exp ?? 0) * 1000;
   setCookie(name, value, {
     expires: new Date(expirationTime),
   });
@@ -53,10 +53,12 @@ export async function getJwt() {
   return data.token;
 }
 
-export async function logOut() {
-  // Clear auth cookies
+export function clearSession() {
   document.cookie = "jwt-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
   document.cookie = "jwt-refresh-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-  // Redirect to login
-  window.location.href = "/onboarding/login";
+}
+
+export async function logOut() {
+  clearSession();
+  window.location.href = "/login";
 }

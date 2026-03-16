@@ -3,6 +3,7 @@ import menuReducer from '../slices/menu-impl-slice';
 import userReducer from '../slices/user-slice';
 import chatReducer from '../slices/chat-slice';
 import authReducer from '../slices/auth-slice';
+import sidebarReducer from '../slices/sidebar-slice';
 
 import { injectable } from 'inversify';
 
@@ -18,6 +19,7 @@ class DefaultStore {
     user: userReducer,
     chat: chatReducer,
     auth: authReducer,
+    sidebar: sidebarReducer,
   };
 
   constructor() {
@@ -51,6 +53,5 @@ class DefaultStore {
 }
 
 export default DefaultStore;
-
 
 

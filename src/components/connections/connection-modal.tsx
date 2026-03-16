@@ -13,6 +13,22 @@ interface ConnectionModalProps {
   onClose: (wasSaved: boolean) => void;
 }
 
+enum DatabaseType {
+  PostgreSQL = "PostgreSQL",
+  MySQL = "MySQL",
+  SQLServer = "SQLServer",
+  MongoDB = "MongoDB",
+  Oracle = "Oracle",
+}
+
+const DATABASE_TYPE_OPTIONS = [
+  { value: DatabaseType.PostgreSQL, label: "PostgreSQL" },
+  { value: DatabaseType.MySQL, label: "MySQL" },
+  { value: DatabaseType.SQLServer, label: "SQL Server" },
+  { value: DatabaseType.MongoDB, label: "MongoDB" },
+  { value: DatabaseType.Oracle, label: "Oracle" },
+];
+
 export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
   const isEditing = !!connection;
   const connectionService = container.get(ConnectionService);
@@ -22,8 +38,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
   const [extraParams, setExtraParams] = useState("");
   const [formData, setFormData] = useState<CreateDatabaseConnectionRequest>({
     name: connection?.name || "",
-    alias: connection?.alias || "",
-    databaseType: connection?.databaseType || "PostgreSQL",
+    databaseType: connection?.databaseType || DatabaseType.PostgreSQL,
     hostName: connection?.hostName || "",
     port: connection?.port || 5432,
     userName: connection?.userName || "",
@@ -37,19 +52,21 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
     const { databaseType, hostName, port, databaseName, userName, password } = formData;
     const pwdStr = password ? password : "";
 
-    if (databaseType === "PostgreSQL") {
+    if (databaseType === DatabaseType.PostgreSQL) {
       str = `Server=${hostName};Port=${port};Database=${databaseName};User Id=${userName};Password=${pwdStr};`;
-    } else if (databaseType === "MySQL") {
+    } else if (databaseType === DatabaseType.MySQL) {
       str = `Server=${hostName};Port=${port};Database=${databaseName};Uid=${userName};Pwd=${pwdStr};`;
-    } else if (databaseType === "SQLServer") {
+    } else if (databaseType === DatabaseType.SQLServer) {
       str = `Server=${hostName},${port};Database=${databaseName};User Id=${userName};Password=${pwdStr};`;
-    } else if (databaseType === "MongoDB") {
+    } else if (databaseType === DatabaseType.MongoDB) {
       const authPart = (userName || pwdStr) ? `${userName}:${pwdStr}@` : "";
       str = `mongodb://${authPart}${hostName}:${port}/${databaseName}`;
+    } else if (databaseType === DatabaseType.Oracle) {
+      str = `Data Source=${hostName}:${port}/${databaseName};User Id=${userName};Password=${pwdStr};`;
     }
 
     if (extraParams) {
-      if (databaseType === "MongoDB") {
+      if (databaseType === DatabaseType.MongoDB) {
         str += str.includes("?") ? `&${extraParams}` : `?${extraParams}`;
       } else {
         str += str.endsWith(";") ? extraParams : `;${extraParams}`;
@@ -189,25 +206,17 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
               </div>
 
               <div className="space-y-2 col-span-2 sm:col-span-1">
-                <Label htmlFor="alias">Alias</Label>
-                <Input
-                  id="alias" name="alias"
-                  placeholder="e.g. prod_db"
-                  value={formData.alias} onChange={handleChange} required
-                />
-              </div>
-
-              <div className="space-y-2 col-span-2 sm:col-span-1">
                 <Label htmlFor="databaseType">Database Type</Label>
                 <select
                   id="databaseType" name="databaseType"
                   value={formData.databaseType} onChange={handleChange}
                   className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="PostgreSQL">PostgreSQL</option>
-                  <option value="MySQL">MySQL</option>
-                  <option value="SQLServer">SQL Server</option>
-                  <option value="MongoDB">MongoDB</option>
+                  {DATABASE_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -260,7 +269,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
                 <Label htmlFor="extraParams">Extra Parameters</Label>
                 <Input
                   id="extraParams" name="extraParams"
-                  placeholder={formData.databaseType === "MongoDB" ? "e.g. authSource=admin&retryWrites=true" : "e.g. Timeout=30;Encrypt=True;"}
+                  placeholder={formData.databaseType === DatabaseType.MongoDB ? "e.g. authSource=admin&retryWrites=true" : "e.g. Timeout=30;Encrypt=True;"}
                   value={extraParams} onChange={(e) => setExtraParams(e.target.value)}
                 />
               </div>

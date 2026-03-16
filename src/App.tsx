@@ -11,6 +11,10 @@ import LoginPage from "@/pages/onboarding/login/page";
 import PromptPage from "@/pages/queries/prompt/page";
 import ConnectionsPage from "@/pages/connections/page";
 import ConnectionDetailsPage from "@/pages/connections/details";
+import UsersPage from "@/pages/users/page";
+import AiLlmConfigPage from "@/pages/ai-llm-config/page";
+import ProtectedRoute from "@/components/guards/protected-route";
+import ModuleAccessRoute from "@/components/guards/module-access-route";
 
 const store = container.get(DefaultStore);
 
@@ -25,11 +29,56 @@ function App() {
         <BrowserRouter>
           <GlobalPopupProvider />
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/connections" element={<ConnectionsPage />} />
-            <Route path="/connections/:id" element={<ConnectionDetailsPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/onboarding/login" element={<LoginPage />} />
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <HomePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/database-connections"
+              element={
+                <ModuleAccessRoute>
+                  <ConnectionsPage />
+                </ModuleAccessRoute>
+              }
+            />
+            <Route
+              path="/connections"
+              element={
+                <ModuleAccessRoute>
+                  <ConnectionsPage />
+                </ModuleAccessRoute>
+              }
+            />
+            <Route
+              path="/connections/:id"
+              element={
+                <ModuleAccessRoute>
+                  <ConnectionDetailsPage />
+                </ModuleAccessRoute>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <ModuleAccessRoute>
+                  <UsersPage />
+                </ModuleAccessRoute>
+              }
+            />
+            <Route
+              path="/ai-llm-config"
+              element={
+                <ModuleAccessRoute>
+                  <AiLlmConfigPage />
+                </ModuleAccessRoute>
+              }
+            />
             <Route path="/queries/prompt" element={<PromptPage />} />
           </Routes>
         </BrowserRouter>

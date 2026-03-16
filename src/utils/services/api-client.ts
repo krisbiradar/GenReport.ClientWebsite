@@ -1,7 +1,7 @@
 import axios, { AxiosError, AxiosInstance, HttpStatusCode } from "axios";
 import { HttpResponse } from "../models/shared/http-response";
 
-import { getJwt } from "../helpers/window-helpers";
+import { clearSession, getJwt } from "../helpers/window-helpers";
 import { showPopup } from "../helpers/popup-helper";
 import { HttpErrorResponse } from "../models/shared/http-error-response";
 import { injectable } from "inversify";
@@ -13,7 +13,7 @@ class ApiClient {
   constructor() {
     this.instance = axios.create({
       baseURL: import.meta.env.VITE_BASE_URL || import.meta.env.BASE_URL || "", // Replace with your base URL
-      timeout: Number.parseInt((import.meta.env.VITE_REQUEST_TIMEOUT || import.meta.env.REQUEST_TIMEOUT) as string || "5000"), // Set a default timeout (in milliseconds)
+      timeout: Number.parseInt((import.meta.env.VITE_REQUEST_TIMEOUT || import.meta.env.REQUEST_TIMEOUT) as string || "115000"), // Set a default timeout (in milliseconds)
       headers: {
         'Content-Type': 'application/json'
       },
@@ -22,8 +22,13 @@ class ApiClient {
     // this is to handle the 401 error returned by the server 
     this.instance?.interceptors.request.use(this.addJwtToHeaders);
     this.instance?.interceptors.response.use(
-      response => response, // On success, just return the response
+      response => response,
       error => {
+        if (error.response?.status === HttpStatusCode.Unauthorized) {
+          clearSession();
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
         if (error.response?.status === HttpStatusCode.Forbidden) {
           showPopup({
             title: "Access Denied",
@@ -34,7 +39,7 @@ class ApiClient {
             }
           });
         }
-        return error.response;
+        return Promise.reject(error);
       }
     );
   }
@@ -128,7 +133,7 @@ class ApiClient {
     }
   }
   async addJwtToHeaders(config: any): Promise<any> {
-    if (Constants.excludeJwtValidation.some((e, i, a) => (config.url as string).startsWith(e))) {
+    if (Constants.excludeJwtValidation.some((e) => (config.url as string).startsWith(e))) {
       return config;
     }
     const jwtToken = await getJwt();
