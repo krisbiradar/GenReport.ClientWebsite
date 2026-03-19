@@ -74,7 +74,7 @@ class ConnectionService {
     }
 
     async testConnection(request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
+        const payload = { ...request, provider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPost<HttpResponse<any>>(
             payload,
             "connections/test"

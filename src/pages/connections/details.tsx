@@ -30,8 +30,8 @@ export default function ConnectionDetailsPage() {
         found = res.successResponse.data.find(c => c.id === id);
       } else if (!res.successResponse && res.errorResponse?.errorCode === "NO_RESPONSE") {
         const mockConnections = [
-          { id: "1", name: "Production DB", databaseType: "PostgreSQL", hostName: "prod.db.internal", port: 5432, userName: "admin_report", databaseName: "genreport_prod" },
-          { id: "2", name: "Staging Replica", databaseType: "MySQL", hostName: "stage.replica.net", port: 3306, userName: "stage_user", databaseName: "genreport_staging" }
+          { id: "1", name: "Production DB", databaseType: "PostgreSQL", hostName: "prod.db.internal", port: 5432, userName: "admin_report", databaseName: "genreport_prod", connectionString: "Server=prod.db.internal;Port=5432;Database=genreport_prod;User Id=admin_report;" },
+          { id: "2", name: "Staging Replica", databaseType: "MySQL", hostName: "stage.replica.net", port: 3306, userName: "stage_user", databaseName: "genreport_staging", connectionString: "Server=stage.replica.net;Port=3306;Database=genreport_staging;Uid=stage_user;" }
         ];
         found = mockConnections.find(c => c.id === id);
       }
