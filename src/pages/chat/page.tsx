@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Message, ChatMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
+import { container } from "@/utils/di/inversify.config";
+import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
 
 // Mock AI endpoint
 const generateMockResponse = async (prompt: string): Promise<string> => {
@@ -33,7 +35,32 @@ export default function ChatPage() {
     }
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [models, setModels] = useState<AiModel[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const aiModelService = container.get(AiModelService);
+
+  useEffect(() => {
+    const fetchModels = async () => {
+      try {
+        const res: any = await aiModelService.getAvailableModels();
+        // Extract data depending on HttpResponse wrapping
+        const data = res.successResponse ? res.successResponse.data : res;
+        if (Array.isArray(data) && data.length > 0) {
+          setModels(data);
+          setSelectedModelId(data[0].id);
+        } else {
+          // Fallback dev mock
+          setModels([{ id: "gemini-pro", name: "Gemini Pro", provider: "Google" }]);
+          setSelectedModelId("gemini-pro");
+        }
+      } catch (err) {
+        setModels([{ id: "gemini-pro", name: "Gemini Pro", provider: "Google" }]);
+        setSelectedModelId("gemini-pro");
+      }
+    };
+    fetchModels();
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -63,7 +90,22 @@ export default function ChatPage() {
     <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen w-full bg-background relative font-sans">
       
       {/* Header - Subtle Gemini style Top Content */}
-      <div className="flex flex-col px-6 pt-12 pb-2 shrink-0 max-w-4xl mx-auto w-full">
+      <div className="flex flex-col px-6 pt-6 pb-2 shrink-0 max-w-4xl mx-auto w-full">
+        <div className="flex justify-start mb-2 w-full animate-in fade-in slide-in-from-top-2">
+          <select 
+            value={selectedModelId}
+            onChange={(e) => setSelectedModelId(e.target.value)}
+            className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {models.length === 0 && <option value="" disabled>Loading models...</option>}
+            {models.map(m => (
+              <option key={m.id} value={m.id} className="bg-background text-foreground">
+                {m.name} ({m.provider})
+              </option>
+            ))}
+          </select>
+        </div>
+
         {messages.length <= 1 && (
           <div className="mt-8 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50">

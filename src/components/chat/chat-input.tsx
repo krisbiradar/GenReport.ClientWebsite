@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal, Paperclip, Mic } from "lucide-react";
+import { SendHorizontal, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
@@ -37,10 +37,10 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
 
   return (
     <div className="relative w-full max-w-4xl mx-auto flex items-end p-2 md:p-3 bg-muted/30 backdrop-blur-xl border shadow-sm rounded-[32px] focus-within:bg-background focus-within:ring-2 focus-within:ring-border focus-within:shadow-md transition-all duration-300">
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
+
+      <Button
+        variant="ghost"
+        size="icon"
         className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground mb-0.5 ml-1 hidden sm:flex"
       >
         <Paperclip className="h-5 w-5" />
@@ -58,22 +58,22 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
       />
 
       {input.trim() ? (
-        <Button 
-          size="icon" 
-          onClick={handleSend} 
+        <Button
+          size="icon"
+          onClick={handleSend}
           disabled={disabled}
           className="h-10 w-10 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-transform mb-0.5 mr-1"
         >
           <SendHorizontal className="h-5 w-5" />
         </Button>
       ) : (
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          disabled={disabled}
-          className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground mb-0.5 mr-1"
+        <Button
+          variant="ghost"
+          size="icon"
+          disabled={true}
+          className="h-10 w-10 shrink-0 rounded-full text-muted-foreground/50 mb-0.5 mr-1 cursor-not-allowed"
         >
-          <Mic className="h-5 w-5" />
+          <SendHorizontal className="h-5 w-5" />
         </Button>
       )}
     </div>
