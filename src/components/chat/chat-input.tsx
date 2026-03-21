@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Paperclip, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ChatInputProps {
@@ -36,25 +36,46 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   return (
-    <div className="relative w-full max-w-4xl mx-auto flex items-end p-2 bg-background border border-border shadow-sm rounded-xl focus-within:ring-1 focus-within:ring-ring transition-shadow">
+    <div className="relative w-full max-w-4xl mx-auto flex items-end p-2 md:p-3 bg-muted/30 backdrop-blur-xl border shadow-sm rounded-[32px] focus-within:bg-background focus-within:ring-2 focus-within:ring-border focus-within:shadow-md transition-all duration-300">
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground mb-0.5 ml-1 hidden sm:flex"
+      >
+        <Paperclip className="h-5 w-5" />
+      </Button>
+
       <textarea
         ref={textareaRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        placeholder="Message..."
+        placeholder="Ask GenReport or type a prompt..."
         disabled={disabled}
-        className="w-full bg-transparent border-0 resize-none max-h-[200px] px-3 py-2 text-sm focus:outline-none focus:ring-0 disabled:opacity-50"
+        className="flex-1 bg-transparent border-0 resize-none max-h-[200px] px-4 py-2.5 text-[15px] focus:outline-none focus:ring-0 disabled:opacity-50 leading-relaxed placeholder:text-muted-foreground/70"
         rows={1}
       />
-      <Button 
-        size="icon" 
-        onClick={handleSend} 
-        disabled={disabled || !input.trim()}
-        className="h-8 w-8 shrink-0 rounded-lg ml-2 mb-1"
-      >
-        <SendHorizontal className="h-4 w-4" />
-      </Button>
+
+      {input.trim() ? (
+        <Button 
+          size="icon" 
+          onClick={handleSend} 
+          disabled={disabled}
+          className="h-10 w-10 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-transform mb-0.5 mr-1"
+        >
+          <SendHorizontal className="h-5 w-5" />
+        </Button>
+      ) : (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          disabled={disabled}
+          className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground mb-0.5 mr-1"
+        >
+          <Mic className="h-5 w-5" />
+        </Button>
+      )}
     </div>
   );
 }

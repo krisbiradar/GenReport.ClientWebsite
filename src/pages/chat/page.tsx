@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Message, ChatMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
-import { Bot } from "lucide-react";
 
-// Mock AI endpoint or service interaction
+// Mock AI endpoint
 const generateMockResponse = async (prompt: string): Promise<string> => {
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -21,7 +20,7 @@ const generateMockResponse = async (prompt: string): Promise<string> => {
         response += `This demonstrates the **typewriter** effect. Try asking me for \`code\`, a \`table\`, or a \`pdf\`!`;
       }
       resolve(response);
-    }, 1000); // 1s simulation delay
+    }, 800);
   });
 };
 
@@ -30,7 +29,7 @@ export default function ChatPage() {
     {
       id: "1",
       role: "assistant",
-      content: "Hello! I am your AI assistant. I can render **Markdown**, `code` blocks, tables, and even embed `.pdf` documents if you link them. Try asking me for 'code', 'table', or 'pdf'!"
+      content: "Hello! I am your AI assistant. I can render **Markdown**, `code` blocks, tables, and embed `.pdf` documents.\n\nTry asking me for 'code', 'table', or 'pdf'!"
     }
   ]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -61,39 +60,44 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen w-full bg-muted/10">
+    <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen w-full bg-background relative font-sans">
       
-      {/* Header */}
-      <div className="flex items-center px-6 py-4 border-b border-border/50 bg-background/95 backdrop-blur shrink-0 shadow-sm z-10 sticky top-0">
-        <Bot className="h-6 w-6 text-primary mr-3" />
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">AI Assistant Chat</h1>
-          <p className="text-xs text-muted-foreground">Experimenting with typewriter effects, code, & PDFs.</p>
-        </div>
+      {/* Header - Subtle Gemini style Top Content */}
+      <div className="flex flex-col px-6 pt-12 pb-2 shrink-0 max-w-4xl mx-auto w-full">
+        {messages.length <= 1 && (
+          <div className="mt-8 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50">
+              Hello, Kris
+            </h1>
+            <h2 className="text-4xl md:text-5xl font-medium tracking-tight text-muted-foreground mt-3">
+              How can I help you today?
+            </h2>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto w-full relative">
-        <div className="divide-y divide-border/10 pb-32">
+      <div className="flex-1 overflow-y-auto w-full relative scroll-smooth">
+        <div className="flex flex-col gap-2 pb-40 pt-4 max-w-4xl mx-auto">
           {messages.map((m, i) => (
             <ChatMessage 
               key={m.id} 
               message={m} 
-              // Only animate the very last assistant message if it just arrived
               animate={m.role === "assistant" && i === messages.length - 1} 
             />
           ))}
-          {/* Invisible ref for auto scrolling */}
-          <div ref={messagesEndRef} className="h-4" />
+          <div ref={messagesEndRef} className="h-8" />
         </div>
       </div>
 
-      {/* Input container placed at the bottom */}
-      <div className="absolute bottom-0 w-full bg-gradient-to-t from-background via-background to-transparent pt-6 pb-6 px-4">
-        <ChatInput onSend={handleSend} disabled={isGenerating} />
-        <p className="text-center text-[10px] text-muted-foreground mt-2">
-          AI generated responses can make mistakes. Check important information.
-        </p>
+      {/* Input container placed at the bottom, floating style */}
+      <div className="absolute bottom-0 w-full bg-gradient-to-t from-background via-background/95 to-transparent pt-12 pb-6 px-4 pointer-events-none">
+        <div className="pointer-events-auto">
+          <ChatInput onSend={handleSend} disabled={isGenerating} />
+          <p className="text-center text-[12px] text-muted-foreground mt-4 font-medium max-w-2xl mx-auto">
+            AI generated responses can make mistakes. Check important information.
+          </p>
+        </div>
       </div>
       
     </div>
