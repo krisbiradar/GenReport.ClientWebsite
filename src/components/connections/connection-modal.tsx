@@ -35,6 +35,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
 
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isTestSuccessful, setIsTestSuccessful] = useState(isEditing);
   const [extraParams, setExtraParams] = useState("");
   const [formData, setFormData] = useState<CreateDatabaseConnectionRequest>({
     name: connection?.name || "",
@@ -82,6 +83,9 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
       ...prev,
       [name]: name === "port" ? parseInt(value) || 0 : value
     }));
+    if (name !== "name") {
+      setIsTestSuccessful(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +152,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
       const res = await connectionService.testConnection(formData);
 
       if ((res as any).successResponse) {
+        setIsTestSuccessful(true);
         showPopup({
           title: "Connection Successful",
           body: "Successfully connected to the database!",
@@ -155,6 +160,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
         });
       } else {
         if ((res as any).errorResponse?.errorCode === "NO_RESPONSE") {
+          setIsTestSuccessful(true);
           showPopup({
             title: "Simulated Test (Dev)",
             body: "Ping simulated locally! Real API not yet connected.",
@@ -270,7 +276,10 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
                 <Input
                   id="extraParams" name="extraParams"
                   placeholder={formData.databaseType === DatabaseType.MongoDB ? "e.g. authSource=admin&retryWrites=true" : "e.g. Timeout=30;Encrypt=True;"}
-                  value={extraParams} onChange={(e) => setExtraParams(e.target.value)}
+                  value={extraParams} onChange={(e) => {
+                    setExtraParams(e.target.value);
+                    setIsTestSuccessful(false);
+                  }}
                 />
               </div>
 
@@ -294,7 +303,7 @@ export function ConnectionModal({ connection, onClose }: ConnectionModalProps) {
               <Button type="button" variant="outline" onClick={() => onClose(false)} disabled={isSaving || isTesting}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving || isTesting}>
+              <Button type="submit" disabled={isSaving || isTesting || !isTestSuccessful}>
                 {isSaving ? "Saving..." : "Save Connection"}
               </Button>
             </div>

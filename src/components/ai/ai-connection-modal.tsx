@@ -38,6 +38,8 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("core");
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [isTestSuccessful, setIsTestSuccessful] = useState(isEditing);
   const [showApiKey, setShowApiKey] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -62,10 +64,50 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
       ...prev,
       [name]: type === "checkbox" ? (e.target as HTMLInputElement).checked : value,
     }));
+    if (name === "provider" || name === "apiKey" || name === "defaultModel") {
+      setIsTestSuccessful(false);
+    }
   };
 
   const parseOptionalNumber = (val: string): number | undefined =>
     val.trim() === "" ? undefined : Number(val);
+
+  const handleTestConnection = async () => {
+    if (!formData.provider) {
+      showPopup({ title: "Validation", body: "Please select a provider.", type: "error" });
+      return;
+    }
+    if (!isEditing && !formData.apiKey.trim()) {
+      showPopup({ title: "Validation", body: "API Key is required.", type: "error" });
+      return;
+    }
+    if (!formData.defaultModel.trim()) {
+      showPopup({ title: "Validation", body: "Default model is required.", type: "error" });
+      return;
+    }
+
+    setIsTesting(true);
+    
+    try {
+      // Simulate fake API call delay
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      
+      setIsTestSuccessful(true);
+      showPopup({
+        title: "Test Successful",
+        body: "Successfully connected to the LLM provider (Simulated).",
+        type: "success"
+      });
+    } catch (err) {
+      showPopup({
+        title: "Test Failed",
+        body: "Failed to connect to the LLM provider.",
+        type: "error"
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -383,20 +425,35 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
         </form>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border/50 bg-muted/10 shrink-0">
-          <Button type="button" variant="outline" onClick={() => onClose(false)} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button type="submit" form="ai-connection-form" disabled={isSaving}>
-            {isSaving ? (
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border/50 bg-muted/10 shrink-0">
+          <Button 
+            type="button" 
+            variant="secondary" 
+            onClick={handleTestConnection} 
+            disabled={isSaving || isTesting}
+          >
+            {isTesting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Saving…
+                Testing…
               </>
-            ) : (
-              isEditing ? "Save Changes" : "Add Provider"
-            )}
+            ) : "Test Connection"}
           </Button>
+          <div className="flex items-center gap-3">
+            <Button type="button" variant="outline" onClick={() => onClose(false)} disabled={isSaving || isTesting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="ai-connection-form" disabled={isSaving || isTesting || !isTestSuccessful}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                isEditing ? "Save Changes" : "Add Provider"
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
