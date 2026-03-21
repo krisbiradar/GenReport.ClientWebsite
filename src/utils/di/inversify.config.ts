@@ -6,6 +6,7 @@ import AuthService from '../services/auth-service';
 import ConnectionService from '../services/connection-service';
 import SidebarService from '../services/sidebar-service';
 import UserManagementService from '../services/user-management-service';
+import AiConnectionService from '../services/ai-connection-service';
 import 'reflect-metadata';
 const container = new Container();
 
@@ -15,5 +16,7 @@ container.bind<AuthService>(AuthService).toSelf().inSingletonScope();
 container.bind<ConnectionService>(ConnectionService).toSelf().inSingletonScope();
 container.bind<SidebarService>(SidebarService).toSelf().inSingletonScope();
 container.bind<UserManagementService>(UserManagementService).toSelf().inSingletonScope();
+container.bind<AiConnectionService>(AiConnectionService).toSelf().inSingletonScope();
 
 export { container };
+

@@ -10,8 +10,7 @@ export interface DatabaseConnection {
     userName: string;
     databaseName: string;
     connectionString: string;
-    // Password might not usually be returned for security, but we keep it in payload.
-    // password?: string;
+
 }
 
 export interface CreateDatabaseConnectionRequest {
@@ -58,7 +57,7 @@ class ConnectionService {
     }
 
     async createConnection(request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
+        const payload = { ...request, provider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPost<HttpResponse<DatabaseConnection>>(
             payload,
             "connections"
@@ -66,7 +65,7 @@ class ConnectionService {
     }
 
     async updateConnection(id: string, request: CreateDatabaseConnectionRequest) {
-        const payload = { ...request, dbProvider: mapDatabaseTypeToDbProvider(request.databaseType) };
+        const payload = { ...request, provider: mapDatabaseTypeToDbProvider(request.databaseType) };
         return await this.apiClient.sendHttpPut<HttpResponse<DatabaseConnection>>(
             `connections/${id}`,
             payload
