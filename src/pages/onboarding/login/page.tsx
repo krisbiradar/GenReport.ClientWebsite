@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFormik } from "formik"
-import { loginSchema } from "@/utils/validations/login-validation"
+import { loginSchema, validateWithZod } from "@/utils/validations/login-validation"
 import { container } from "@/utils/di/inversify.config"
 import AuthService from "@/utils/services/auth-service"
 import { setJwt } from "@/utils/helpers/window-helpers"
@@ -41,7 +41,7 @@ export default function LoginPage() {
   const { values, touched, errors, handleBlur, handleChange, handleSubmit } =
     useFormik({
       initialValues: { email: "", password: "" },
-      validationSchema: loginSchema,
+      validate: validateWithZod(loginSchema),
       onSubmit: async (formValues) => {
         setIsLoading(true)
         try {
@@ -131,8 +131,8 @@ export default function LoginPage() {
                       type="email"
                       placeholder="you@example.com"
                       className={`transition-all duration-200 ${errors.email && touched.email
-                          ? "input-field-error ring-1 ring-red-400"
-                          : "focus:ring-1 focus:ring-primary"
+                        ? "input-field-error ring-1 ring-red-400"
+                        : "focus:ring-1 focus:ring-primary"
                         }`}
                       value={values.email}
                       onChange={handleChange}
@@ -153,8 +153,8 @@ export default function LoginPage() {
                         type={showPassword ? "text" : "password"}
                         placeholder="••••••••"
                         className={`pr-10 transition-all duration-200 ${errors.password && touched.password
-                            ? "input-field-error ring-1 ring-red-400"
-                            : "focus:ring-1 focus:ring-primary"
+                          ? "input-field-error ring-1 ring-red-400"
+                          : "focus:ring-1 focus:ring-primary"
                           }`}
                         value={values.password}
                         onChange={handleChange}

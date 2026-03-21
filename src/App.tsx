@@ -13,6 +13,7 @@ import ConnectionsPage from "@/pages/connections/page";
 import ConnectionDetailsPage from "@/pages/connections/details";
 import UsersPage from "@/pages/users/page";
 import AiLlmConfigPage from "@/pages/ai-llm-config/page";
+import ChatPage from "@/pages/chat/page";
 import ProtectedRoute from "@/components/guards/protected-route";
 import ModuleAccessRoute from "@/components/guards/module-access-route";
 
@@ -80,6 +81,7 @@ function App() {
               }
             />
             <Route path="/queries/prompt" element={<PromptPage />} />
+            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
