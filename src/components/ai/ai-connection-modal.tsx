@@ -8,6 +8,7 @@ import AiConnectionService, {
   CreateAiConnectionRequest,
   UpdateAiConnectionRequest,
 } from "@/utils/services/ai-connection-service";
+import { AiProviderModel } from "@/utils/services/ai-connection-service";
 import { container } from "@/utils/di/inversify.config";
 import { showPopup } from "@/utils/helpers/popup-helper";
 
@@ -23,7 +24,6 @@ const PROVIDER_OPTIONS = [
   { value: "Anthropic", label: "Anthropic" },
   { value: "Gemini", label: "Gemini" },
   { value: "Ollama", label: "Ollama" },
-  { value: "Custom", label: "Custom" },
 ];
 
 const INPUT_CLASS =
@@ -41,6 +41,8 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
   const [isTesting, setIsTesting] = useState(false);
   const [isTestSuccessful, setIsTestSuccessful] = useState(isEditing);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [availableModels, setAvailableModels] = useState<AiProviderModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
 
   const [formData, setFormData] = useState({
     provider: connection?.provider ?? "OpenAI",
@@ -71,6 +73,38 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
 
   const parseOptionalNumber = (val: string): number | undefined =>
     val.trim() === "" ? undefined : Number(val);
+
+  React.useEffect(() => {
+    const fetchModels = async () => {
+      const provider = formData.provider;
+      if (!provider) {
+        setAvailableModels([]);
+        return;
+      }
+
+      if (provider.toLowerCase() === "ollama") {
+        setAvailableModels([]);
+        return;
+      }
+
+      setIsLoadingModels(true);
+      try {
+        const response = await aiService.getModels(provider);
+        if (response.successResponse?.data) {
+          setAvailableModels(response.successResponse.data);
+        } else {
+          setAvailableModels([]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch models", error);
+        setAvailableModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    fetchModels();
+  }, [formData.provider]);
 
   const handleTestConnection = async () => {
     if (!formData.provider) {
@@ -269,14 +303,46 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
                 {/* Default Model */}
                 <div className="space-y-2">
                   <Label htmlFor="ai-default-model">Default Model</Label>
-                  <Input
-                    id="ai-default-model"
-                    name="defaultModel"
-                    placeholder="e.g. gpt-4o"
-                    value={formData.defaultModel}
-                    onChange={handleChange}
-                    required
-                  />
+                  {formData.provider.toLowerCase() === "ollama" ? (
+                    <Input
+                      id="ai-default-model"
+                      name="defaultModel"
+                      placeholder="e.g. llama3"
+                      value={formData.defaultModel}
+                      onChange={handleChange}
+                      required
+                    />
+                  ) : (
+                    <div className="relative">
+                      <select
+                        id="ai-default-model"
+                        name="defaultModel"
+                        value={formData.defaultModel}
+                        onChange={handleChange}
+                        disabled={isLoadingModels || availableModels.length === 0}
+                        className={INPUT_CLASS}
+                        required
+                      >
+                        <option value="" disabled>
+                          {isLoadingModels
+                            ? "Loading models..."
+                            : availableModels.length === 0
+                            ? "No models available"
+                            : "Select a model"}
+                        </option>
+                        {availableModels.map((model) => (
+                          <option key={model.modelId} value={model.modelId}>
+                            {model.modelName}
+                          </option>
+                        ))}
+                      </select>
+                      {isLoadingModels && (
+                        <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Active toggle */}

@@ -88,11 +88,11 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen w-full bg-background relative font-sans">
-      
+
       {/* Header - Subtle Gemini style Top Content */}
       <div className="flex flex-col px-6 pt-6 pb-2 shrink-0 max-w-4xl mx-auto w-full">
         <div className="flex justify-start mb-2 w-full animate-in fade-in slide-in-from-top-2">
-          <select 
+          <select
             value={selectedModelId}
             onChange={(e) => setSelectedModelId(e.target.value)}
             className="flex h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
@@ -122,10 +122,10 @@ export default function ChatPage() {
       <div className="flex-1 overflow-y-auto w-full relative scroll-smooth">
         <div className="flex flex-col gap-2 pb-40 pt-4 max-w-4xl mx-auto">
           {messages.map((m, i) => (
-            <ChatMessage 
-              key={m.id} 
-              message={m} 
-              animate={m.role === "assistant" && i === messages.length - 1} 
+            <ChatMessage
+              key={m.id}
+              message={m}
+              animate={m.role === "assistant" && i === messages.length - 1}
             />
           ))}
           <div ref={messagesEndRef} className="h-8" />
@@ -141,7 +141,7 @@ export default function ChatPage() {
           </p>
         </div>
       </div>
-      
+
     </div>
   );
 }

@@ -12,6 +12,11 @@ export enum AiEndpointType {
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
+export interface AiProviderModel {
+  modelId: string;
+  modelName: string;
+}
+
 export interface AiModelEndpoint {
   id: number;
   aiConnectionId: number;
@@ -117,6 +122,19 @@ class AiConnectionService {
     return await this.apiClient.sendHttpPut<HttpResponse<AiModelEndpoint>>(
       `ai/connections/${connId}/endpoints/${epId}`,
       req
+    );
+  }
+
+  async getModels(provider: string) {
+    if (provider.toLowerCase() === "ollama") {
+      return new HttpResponse<AiProviderModel[]>({
+        statusCode: 200,
+        message: "OK",
+        data: []
+      } as any);
+    }
+    return await this.apiClient.sendHttpGet<AiProviderModel[]>(
+      `ai/providers/${provider.toLowerCase()}/models`
     );
   }
 }
