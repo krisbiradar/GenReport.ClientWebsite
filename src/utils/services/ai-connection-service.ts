@@ -78,6 +78,13 @@ export interface UpdateAiModelEndpointRequest {
   notes?: string;
 }
 
+export interface TestAiConnectionRequest {
+  provider: string;
+  apiKey: string;
+  defaultModel: string;
+  chatEndpointUrl?: string;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -105,6 +112,13 @@ class AiConnectionService {
   async deleteConnection(id: number) {
     return await this.apiClient.sendHttpDelete<HttpResponse<{ id: number }>>(
       `ai/connections/${id}`
+    );
+  }
+
+  async testConnection(req: TestAiConnectionRequest) {
+    return await this.apiClient.sendHttpPost<HttpResponse<any>>(
+      req,
+      "ai/connections/test"
     );
   }
 

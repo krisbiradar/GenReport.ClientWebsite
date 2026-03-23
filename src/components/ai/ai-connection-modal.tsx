@@ -7,6 +7,7 @@ import AiConnectionService, {
   AiConnection,
   CreateAiConnectionRequest,
   UpdateAiConnectionRequest,
+  TestAiConnectionRequest,
 } from "@/utils/services/ai-connection-service";
 import { AiProviderModel } from "@/utils/services/ai-connection-service";
 import { container } from "@/utils/di/inversify.config";
@@ -111,8 +112,11 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
       showPopup({ title: "Validation", body: "Please select a provider.", type: "error" });
       return;
     }
-    if (!isEditing && !formData.apiKey.trim()) {
-      showPopup({ title: "Validation", body: "API Key is required.", type: "error" });
+    if (!formData.apiKey.trim()) {
+      const msg = isEditing 
+        ? "Please enter the API Key to test the connection (key is not saved unless you click Save)."
+        : "API Key is required.";
+      showPopup({ title: "Validation", body: msg, type: "error" });
       return;
     }
     if (!formData.defaultModel.trim()) {
@@ -123,19 +127,32 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
     setIsTesting(true);
     
     try {
-      // Simulate fake API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      
-      setIsTestSuccessful(true);
-      showPopup({
-        title: "Test Successful",
-        body: "Successfully connected to the LLM provider (Simulated).",
-        type: "success"
-      });
-    } catch (err) {
+      const req: TestAiConnectionRequest = {
+        provider: formData.provider,
+        apiKey: formData.apiKey,
+        defaultModel: formData.defaultModel,
+      };
+
+      const res = await aiService.testConnection(req);
+
+      if (res?.successResponse) {
+        setIsTestSuccessful(true);
+        showPopup({
+          title: "Test Successful",
+          body: "Successfully connected to the LLM provider.",
+          type: "success"
+        });
+      } else {
+        showPopup({
+          title: "Test Failed",
+          body: res?.errorResponse?.message ?? "Failed to connect to the LLM provider.",
+          type: "error"
+        });
+      }
+    } catch (err: any) {
       showPopup({
         title: "Test Failed",
-        body: "Failed to connect to the LLM provider.",
+        body: err?.message || "A network error occurred.",
         type: "error"
       });
     } finally {
