@@ -16,6 +16,7 @@ import AiLlmConfigPage from "@/pages/ai-llm-config/page";
 import ChatPage from "@/pages/chat/page";
 import ProtectedRoute from "@/components/guards/protected-route";
 import ModuleAccessRoute from "@/components/guards/module-access-route";
+import { MainLayout } from "@/components/layout/main-layout";
 
 const store = container.get(DefaultStore);
 
@@ -81,7 +82,16 @@ function App() {
               }
             />
             <Route path="/queries/prompt" element={<PromptPage />} />
-            <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </BrowserRouter>
       </ThemeProvider>

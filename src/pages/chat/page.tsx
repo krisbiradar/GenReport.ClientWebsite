@@ -87,7 +87,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen w-full bg-background relative font-sans">
+    <div className="flex flex-col h-full w-full bg-background relative font-sans">
 
       {/* Header - Subtle Gemini style Top Content */}
       <div className="flex flex-col px-6 pt-6 pb-2 shrink-0 max-w-4xl mx-auto w-full">
