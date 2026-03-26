@@ -4,44 +4,47 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { Sparkles, User } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Sparkles } from "lucide-react";
+import { Avatar } from "@/components/ui/avatar";
 import { PdfViewer } from "./pdf-viewer";
-
-export interface Message {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-}
+import type { UIMessage } from "ai";
 
 interface ChatMessageProps {
-  message: Message;
+  message: UIMessage;
   animate?: boolean;
+}
+
+/** Extract plain text content from an AI SDK UIMessage parts array. */
+function getTextContent(message: UIMessage): string {
+  return message.parts
+    .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
+    .map((p) => p.text)
+    .join("");
 }
 
 export function ChatMessage({ message, animate = false }: ChatMessageProps) {
   const isUser = message.role === "user";
-  const { displayedText } = useTypewriter(message.content, 15, animate && !isUser);
-
-  const contentToRender = isUser ? message.content : (animate ? displayedText : message.content);
+  const rawContent = getTextContent(message);
+  const { displayedText } = useTypewriter(rawContent, 15, animate && !isUser);
+  const contentToRender = isUser ? rawContent : (animate ? displayedText : rawContent);
 
   return (
     <div className={`flex w-full px-4 md:px-8 py-2 md:py-4 ${isUser ? "justify-end" : "justify-start"}`}>
       <div className={`flex gap-4 w-full max-w-4xl ${isUser ? "justify-end" : "justify-start"}`}>
-        
+
         {!isUser && (
           <Avatar className="h-8 w-8 shrink-0 rounded-full border border-primary/20 bg-primary/10 shadow-sm mt-1.5 flex items-center justify-center">
-             <Sparkles className="h-4 w-4 text-primary" />
+            <Sparkles className="h-4 w-4 text-primary" />
           </Avatar>
         )}
 
         <div className={`overflow-hidden min-w-0 ${isUser ? "max-w-[85%] sm:max-w-[70%] bg-muted/60 text-foreground px-5 py-3.5 rounded-[24px] rounded-tr-md shadow-sm" : "flex-1 px-1 py-1"}`}>
           {!isUser && animate && displayedText === "" ? (
-             <div className="h-6 flex items-center space-x-1 mt-2">
-               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: '0ms' }}></span>
-               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: '150ms' }}></span>
-               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: '300ms' }}></span>
-             </div>
+            <div className="h-6 flex items-center space-x-1 mt-2">
+              <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "0ms" }} />
+              <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "150ms" }} />
+              <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "300ms" }} />
+            </div>
           ) : (
             <div className={`prose dark:prose-invert prose-sm md:prose-base max-w-none break-words ${isUser ? "prose-p:leading-relaxed prose-p:my-0 text-[15px]" : "text-[15px] leading-7"}`}>
               <ReactMarkdown
@@ -89,13 +92,13 @@ export function ChatMessage({ message, animate = false }: ChatMessageProps) {
                     );
                   },
                   th({ children, ...props }: any) {
-                     return <th className="border-b bg-muted/50 p-3 text-left font-semibold text-foreground m-0" {...props}>{children}</th>;
+                    return <th className="border-b bg-muted/50 p-3 text-left font-semibold text-foreground m-0" {...props}>{children}</th>;
                   },
                   td({ children, ...props }: any) {
-                     return <td className="border-b border-border/50 p-3 last:border-0 text-muted-foreground m-0" {...props}>{children}</td>;
+                    return <td className="border-b border-border/50 p-3 last:border-0 text-muted-foreground m-0" {...props}>{children}</td>;
                   },
                   p({ children, ...props }: any) {
-                     return <p className={`m-0 ${!isUser ? "[&:not(:first-child)]:mt-5" : ""}`} {...props}>{children}</p>;
+                    return <p className={`m-0 ${!isUser ? "[&:not(:first-child)]:mt-5" : ""}`} {...props}>{children}</p>;
                   }
                 }}
               >
