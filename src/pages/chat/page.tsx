@@ -6,14 +6,18 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
 import { getJwt } from "@/utils/helpers/window-helpers";
+import { useSelector } from "react-redux";
+import { AuthState } from "@/state-management/slices/auth-slice";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "";
 
 export default function ChatPage() {
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
+  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const aiModelService = container.get(AiModelService);
+  const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -32,19 +36,40 @@ export default function ChatPage() {
 
   useEffect(() => {
     const fetchModels = async () => {
+      setIsLoadingModels(true);
       try {
         const res: any = await aiModelService.getAvailableModels();
         const data = res.successResponse ? res.successResponse.data : res;
         if (Array.isArray(data) && data.length > 0) {
-          setModels(data);
-          setSelectedModelId(data[0].id);
+          const flatModels: AiModel[] = [];
+          for (const group of data) {
+            if (group.models && Array.isArray(group.models)) {
+              for (const m of group.models) {
+                flatModels.push({
+                  id: m.modelId,
+                  name: m.modelName,
+                  provider: group.provider,
+                });
+              }
+            } else if (group.id && group.name) {
+              flatModels.push(group as AiModel);
+            }
+          }
+
+          if (flatModels.length > 0) {
+            setModels(flatModels);
+            setSelectedModelId(flatModels[0].id);
+          } else {
+            setModels([]);
+          }
         } else {
-          setModels([{ id: "gemini-pro", name: "Gemini Pro", provider: "Google" }]);
-          setSelectedModelId("gemini-pro");
+          setModels([]);
         }
-      } catch {
-        setModels([{ id: "gemini-pro", name: "Gemini Pro", provider: "Google" }]);
-        setSelectedModelId("gemini-pro");
+      } catch (error) {
+        console.error("Failed to fetch available chat models", error);
+        setModels([]);
+      } finally {
+        setIsLoadingModels(false);
       }
     };
     fetchModels();
@@ -66,7 +91,7 @@ export default function ChatPage() {
         {messages.length === 0 && (
           <div className="mt-8 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50">
-              Hello, Kris
+              Hello, {firstName || "User"}
             </h1>
             <h2 className="text-4xl md:text-5xl font-medium tracking-tight text-muted-foreground mt-3">
               How can I help you today?
@@ -110,6 +135,7 @@ export default function ChatPage() {
             models={models}
             selectedModelId={selectedModelId}
             onModelChange={setSelectedModelId}
+            isLoadingModels={isLoadingModels}
           />
           <p className="text-center text-[12px] text-muted-foreground mt-4 font-medium max-w-2xl mx-auto">
             AI generated responses can make mistakes. Check important information.

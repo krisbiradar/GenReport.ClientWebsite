@@ -9,9 +9,10 @@ interface ChatInputProps {
   models?: AiModel[];
   selectedModelId?: string;
   onModelChange?: (id: string) => void;
+  isLoadingModels?: boolean;
 }
 
-export function ChatInput({ onSend, disabled, models = [], selectedModelId = "", onModelChange }: ChatInputProps) {
+export function ChatInput({ onSend, disabled, models = [], selectedModelId = "", onModelChange, isLoadingModels = false }: ChatInputProps) {
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -40,7 +41,7 @@ export function ChatInput({ onSend, disabled, models = [], selectedModelId = "",
   };
 
   const selectedModel = models.find((m) => m.id === selectedModelId);
-  const modelLabel = selectedModel ? selectedModel.name : models.length === 0 ? "Loading..." : "Select model";
+  const modelLabel = selectedModel ? selectedModel.name : isLoadingModels ? "Loading..." : "No models";
 
   return (
     <div className="relative w-full max-w-4xl mx-auto flex flex-col bg-muted/30 backdrop-blur-xl border shadow-sm rounded-[28px] focus-within:bg-background focus-within:ring-2 focus-within:ring-border focus-within:shadow-md transition-all duration-300">
@@ -75,9 +76,10 @@ export function ChatInput({ onSend, disabled, models = [], selectedModelId = "",
             value={selectedModelId}
             onChange={(e) => onModelChange?.(e.target.value)}
             disabled={models.length === 0}
-            className="appearance-none h-8 pl-3 pr-7 rounded-full bg-muted/50 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer transition-all focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+            className="appearance-none h-8 pl-3 pr-7 max-w-[160px] sm:max-w-[240px] truncate rounded-full bg-muted/50 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer transition-all focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
           >
-            {models.length === 0 && <option value="">Loading models...</option>}
+            {isLoadingModels && <option value="">Loading models...</option>}
+            {!isLoadingModels && models.length === 0 && <option value="">No models available</option>}
             {models.map((m) => (
               <option key={m.id} value={m.id} className="bg-background text-foreground">
                 {m.name}

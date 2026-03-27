@@ -12,6 +12,6 @@ export default class AiModelService {
   constructor(@inject(ApiClient) private apiClient: ApiClient) {}
 
   async getAvailableModels() {
-    return await this.apiClient.sendHttpGet<AiModel[]>("ai/models");
+    return await this.apiClient.sendHttpGet<AiModel[]>("chat/models");
   }
 }
