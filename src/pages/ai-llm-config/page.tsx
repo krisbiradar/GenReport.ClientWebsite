@@ -13,7 +13,6 @@ import AiConnectionService, { AiConnection } from "@/utils/services/ai-connectio
 import { container } from "@/utils/di/inversify.config";
 import { showPopup } from "@/utils/helpers/popup-helper";
 import { AiConnectionModal } from "@/components/ai/ai-connection-modal";
-import { AiEndpointsSheet } from "@/components/ai/ai-endpoints-sheet";
 
 // Map provider string → Lucide icon
 function ProviderIcon({ provider }: { provider: string }) {
@@ -32,8 +31,6 @@ export default function AiLlmConfigPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<AiConnection | null>(null);
 
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetConnection, setSheetConnection] = useState<AiConnection | null>(null);
 
   const aiService = container.get(AiConnectionService);
 
@@ -72,10 +69,6 @@ export default function AiLlmConfigPage() {
     if (wasSaved) loadConnections();
   };
 
-  const handleManageEndpoints = (conn: AiConnection) => {
-    setSheetConnection(conn);
-    setIsSheetOpen(true);
-  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -193,14 +186,7 @@ export default function AiLlmConfigPage() {
                         )}
                       </span>
                     </div>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => handleManageEndpoints(conn)}
-                    >
-                      Manage Endpoints
-                    </Button>
+
                   </CardFooter>
                 </Card>
               ))}
@@ -218,12 +204,7 @@ export default function AiLlmConfigPage() {
         />
       )}
 
-      {isSheetOpen && sheetConnection && (
-        <AiEndpointsSheet
-          connection={sheetConnection}
-          onClose={() => setIsSheetOpen(false)}
-        />
-      )}
+
     </div>
   );
 }
