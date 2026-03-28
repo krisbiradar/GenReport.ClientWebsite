@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Bot, Brain, Cpu, Sparkles, Plus, Pencil } from "lucide-react";
+import { Bot, Brain, Cpu, Sparkles, Plus, Pencil, Star } from "lucide-react";
 import {
   Card,
   CardDescription,
@@ -132,7 +132,15 @@ export default function AiLlmConfigPage() {
                           <ProviderIcon provider={conn.provider} />
                         </div>
                         <div>
-                          <CardTitle className="text-lg">{conn.provider}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg">{conn.provider}</CardTitle>
+                            {conn.isDefault && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-[10px] font-semibold px-2 py-0.5 uppercase tracking-wider">
+                                <Star className="h-3 w-3 fill-primary" />
+                                Default
+                              </span>
+                            )}
+                          </div>
                           <CardDescription className="mt-1 font-mono text-xs uppercase tracking-wider">
                             {conn.defaultModel}
                           </CardDescription>

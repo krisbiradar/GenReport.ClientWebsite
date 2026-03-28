@@ -5,6 +5,7 @@ import { ChatMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
+import ChatService from "@/utils/services/chat-service";
 import { getJwt } from "@/utils/helpers/window-helpers";
 import { useSelector } from "react-redux";
 import { AuthState } from "@/state-management/slices/auth-slice";
@@ -15,8 +16,11 @@ export default function ChatPage() {
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const aiModelService = container.get(AiModelService);
+  const chatService = container.get(ChatService);
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
   const { messages, sendMessage, status } = useChat({
@@ -28,6 +32,7 @@ export default function ChatPage() {
       },
       body: () => ({
         modelId: selectedModelId,
+        ...(sessionId ? { sessionId } : {}),
       }),
     }),
   });
@@ -79,7 +84,25 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSend = (content: string) => {
+  const handleSend = async (content: string) => {
+    let activeSessionId = sessionId;
+
+    if (!activeSessionId) {
+      setIsCreatingSession(true);
+      try {
+        const res: any = await chatService.createSession({ modelId: selectedModelId, title: content.slice(0, 80) });
+        const created = res?.successResponse?.data ?? res;
+        if (created?.id) {
+          activeSessionId = created.id;
+          setSessionId(created.id);
+        }
+      } catch (err) {
+        console.error("Failed to create chat session", err);
+      } finally {
+        setIsCreatingSession(false);
+      }
+    }
+
     sendMessage({ text: content });
   };
 
@@ -131,7 +154,7 @@ export default function ChatPage() {
         <div className="pointer-events-auto">
           <ChatInput
             onSend={handleSend}
-            disabled={isGenerating}
+            disabled={isGenerating || isCreatingSession}
             models={models}
             selectedModelId={selectedModelId}
             onModelChange={setSelectedModelId}

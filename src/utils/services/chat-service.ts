@@ -10,6 +10,11 @@ export interface ChatSession {
   updatedAt: string;
 }
 
+export interface CreateChatSessionRequest {
+  modelId: string;
+  title?: string;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -18,6 +23,10 @@ class ChatService {
 
   async getSessions() {
     return await this.apiClient.sendHttpGet<ChatSession[]>("chat/sessions");
+  }
+
+  async createSession(req: CreateChatSessionRequest) {
+    return await this.apiClient.sendHttpPost<ChatSession>(req, "chat/sessions");
   }
 }
 

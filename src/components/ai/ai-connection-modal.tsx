@@ -50,6 +50,7 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
     apiKey: "",
     defaultModel: connection?.defaultModel ?? "",
     isActive: connection?.isActive ?? true,
+    isDefault: connection?.isDefault ?? false,
     systemPrompt: connection?.systemPrompt ?? "",
     temperature: connection?.temperature?.toString() ?? "",
     maxTokens: connection?.maxTokens?.toString() ?? "",
@@ -191,6 +192,7 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
           costPer1kInputTokens: parseOptionalNumber(formData.costPer1kInputTokens),
           costPer1kOutputTokens: parseOptionalNumber(formData.costPer1kOutputTokens),
           isActive: formData.isActive,
+          isDefault: formData.isDefault,
         };
         res = await aiService.updateConnection(connection!.id, req);
       } else {
@@ -206,6 +208,7 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
           costPer1kInputTokens: parseOptionalNumber(formData.costPer1kInputTokens),
           costPer1kOutputTokens: parseOptionalNumber(formData.costPer1kOutputTokens),
           isActive: formData.isActive,
+          isDefault: formData.isDefault,
         };
         res = await aiService.createConnection(req);
       }
@@ -380,6 +383,31 @@ export function AiConnectionModal({ connection, onClose }: AiConnectionModalProp
                     <span
                       className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
                         formData.isActive ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* IsDefault toggle */}
+                <div className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-3 bg-muted/10">
+                  <div>
+                    <p className="text-sm font-medium">Set as Default</p>
+                    <p className="text-xs text-muted-foreground">
+                      Use this connection by default for this provider. Any existing default will be replaced.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={formData.isDefault}
+                    onClick={() => setFormData((prev) => ({ ...prev, isDefault: !prev.isDefault }))}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                      formData.isDefault ? "bg-primary" : "bg-input"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform ${
+                        formData.isDefault ? "translate-x-5" : "translate-x-0"
                       }`}
                     />
                   </button>

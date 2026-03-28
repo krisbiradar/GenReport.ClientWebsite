@@ -39,6 +39,7 @@ export interface AiConnection {
   costPer1kInputTokens?: number;
   costPer1kOutputTokens?: number;
   isActive: boolean;
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
   modelEndpoints: AiModelEndpoint[];
@@ -56,6 +57,7 @@ export interface CreateAiConnectionRequest {
   costPer1kInputTokens?: number;
   costPer1kOutputTokens?: number;
   isActive: boolean;
+  isDefault: boolean;
 }
 
 export interface UpdateAiConnectionRequest {
@@ -69,6 +71,7 @@ export interface UpdateAiConnectionRequest {
   costPer1kInputTokens?: number;
   costPer1kOutputTokens?: number;
   isActive?: boolean;
+  isDefault?: boolean;
 }
 
 export interface UpdateAiModelEndpointRequest {
