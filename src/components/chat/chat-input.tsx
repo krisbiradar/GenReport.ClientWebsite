@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain, X } from "lucide-react";
+import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain, X, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiModel } from "@/utils/services/ai-model-service";
 import { AiConnection } from "@/utils/services/ai-connection-service";
@@ -16,6 +16,8 @@ interface ChatInputProps {
   selectedProviderId?: string | null;
   onProviderChange?: (id: string) => void;
   isLoadingProviders?: boolean;
+  isGenerating?: boolean;
+  onStop?: () => void;
 }
 
 function ProviderIcon({ provider, className = "h-3.5 w-3.5" }: { provider: string; className?: string }) {
@@ -37,6 +39,8 @@ export function ChatInput({
   selectedProviderId = null,
   onProviderChange,
   isLoadingProviders = false,
+  isGenerating = false,
+  onStop,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
   const [files, setFiles] = useState<File[]>([]);
@@ -245,9 +249,19 @@ export function ChatInput({
           </div>
         </div>
 
-        {/* Send button */}
-        {input.trim() || files.length > 0 ? (
+        {/* Send or Stop button */}
+        {isGenerating ? (
           <Button
+            type="button"
+            size="icon"
+            onClick={onStop}
+            className="h-9 w-9 shrink-0 rounded-full bg-destructive/10 hover:bg-destructive/20 text-destructive shadow-sm transition-transform"
+          >
+            <Square className="h-4 w-4 fill-current" />
+          </Button>
+        ) : input.trim() || files.length > 0 ? (
+          <Button
+            type="button"
             size="icon"
             onClick={handleSend}
             disabled={disabled}
@@ -257,6 +271,7 @@ export function ChatInput({
           </Button>
         ) : (
           <Button
+            type="button"
             variant="ghost"
             size="icon"
             disabled={true}

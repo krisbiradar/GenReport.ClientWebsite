@@ -31,7 +31,7 @@ export default function ChatPage() {
   const chatService = container.get(ChatService);
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({
       api: `${BASE_URL}/chat/sessions/messages`,
       headers: async (): Promise<Record<string, string>> => {
@@ -206,6 +206,8 @@ export default function ChatPage() {
         <div className="pointer-events-auto">
           <ChatInput
             onSend={handleSend}
+            onStop={stop}
+            isGenerating={isGenerating}
             disabled={isGenerating || isCreatingSession}
             models={models}
             selectedModelId={selectedModelId}
