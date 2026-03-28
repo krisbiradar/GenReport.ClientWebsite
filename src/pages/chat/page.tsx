@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { ChatMessage } from "@/components/chat/chat-message";
 import { ChatInput } from "@/components/chat/chat-input";
 import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
+import AiConnectionService, { AiConnection } from "@/utils/services/ai-connection-service";
 import ChatService from "@/utils/services/chat-service";
 import { getJwt } from "@/utils/helpers/window-helpers";
 import { useSelector } from "react-redux";
@@ -16,10 +17,17 @@ export default function ChatPage() {
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
+
+  const [providers, setProviders] = useState<AiConnection[]>([]);
+  const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
+  const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(true);
+
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const aiModelService = container.get(AiModelService);
+  const aiConnectionService = container.get(AiConnectionService);
   const chatService = container.get(ChatService);
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
@@ -39,6 +47,27 @@ export default function ChatPage() {
 
   const isGenerating = status === "submitted" || status === "streaming";
 
+  // ── Load providers ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const fetchProviders = async () => {
+      setIsLoadingProviders(true);
+      try {
+        const res = await aiConnectionService.getConnections();
+        const data = res.successResponse?.data ?? [];
+        setProviders(data);
+        // Pre-select the default provider
+        const def = data.find((p) => p.isDefault) ?? data[0] ?? null;
+        if (def) setSelectedProviderId(String(def.id));
+      } catch {
+        setProviders([]);
+      } finally {
+        setIsLoadingProviders(false);
+      }
+    };
+    fetchProviders();
+  }, []);
+
+  // ── Load models ───────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchModels = async () => {
       setIsLoadingModels(true);
@@ -50,28 +79,18 @@ export default function ChatPage() {
           for (const group of data) {
             if (group.models && Array.isArray(group.models)) {
               for (const m of group.models) {
-                flatModels.push({
-                  id: m.modelId,
-                  name: m.modelName,
-                  provider: group.provider,
-                });
+                flatModels.push({ id: m.modelId, name: m.modelName, provider: group.provider });
               }
             } else if (group.id && group.name) {
               flatModels.push(group as AiModel);
             }
           }
-
           if (flatModels.length > 0) {
             setModels(flatModels);
             setSelectedModelId(flatModels[0].id);
-          } else {
-            setModels([]);
           }
-        } else {
-          setModels([]);
         }
-      } catch (error) {
-        console.error("Failed to fetch available chat models", error);
+      } catch {
         setModels([]);
       } finally {
         setIsLoadingModels(false);
@@ -84,13 +103,36 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // ── Handle provider change ────────────────────────────────────────────────
+  const handleProviderChange = useCallback(
+    async (providerId: string) => {
+      setSelectedProviderId(providerId);
+
+      // If a session is already active, update it on the backend
+      if (sessionId) {
+        try {
+          await chatService.updateSessionProvider(sessionId, { providerId });
+        } catch (err) {
+          console.error("Failed to update session provider", err);
+        }
+      }
+      // If no session yet, the new providerId will be sent when the session is created
+    },
+    [sessionId, chatService]
+  );
+
+  // ── Handle send ───────────────────────────────────────────────────────────
   const handleSend = async (content: string) => {
     let activeSessionId = sessionId;
 
     if (!activeSessionId) {
       setIsCreatingSession(true);
       try {
-        const res: any = await chatService.createSession({ modelId: selectedModelId, title: content.slice(0, 80) });
+        const res: any = await chatService.createSession({
+          modelId: selectedModelId,
+          providerId: selectedProviderId ?? undefined,
+          title: content.slice(0, 80),
+        });
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = created.id;
@@ -134,7 +176,7 @@ export default function ChatPage() {
             />
           ))}
 
-          {/* Thinking indicator while submitted but not yet streaming */}
+          {/* Thinking indicator */}
           {status === "submitted" && (
             <div className="flex w-full px-4 md:px-8 py-2 justify-start">
               <div className="h-6 flex items-center space-x-1 ml-12 mt-1">
@@ -159,6 +201,10 @@ export default function ChatPage() {
             selectedModelId={selectedModelId}
             onModelChange={setSelectedModelId}
             isLoadingModels={isLoadingModels}
+            providers={providers}
+            selectedProviderId={selectedProviderId}
+            onProviderChange={handleProviderChange}
+            isLoadingProviders={isLoadingProviders}
           />
           <p className="text-center text-[12px] text-muted-foreground mt-4 font-medium max-w-2xl mx-auto">
             AI generated responses can make mistakes. Check important information.
