@@ -4,7 +4,7 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useTypewriter } from "@/hooks/use-typewriter";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Paperclip } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { PdfViewer } from "./pdf-viewer";
 import type { UIMessage } from "ai";
@@ -14,12 +14,14 @@ interface ChatMessageProps {
   animate?: boolean;
 }
 
-/** Extract plain text content from an AI SDK UIMessage parts array. */
 function getTextContent(message: UIMessage): string {
-  return message.parts
-    .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  if (message.parts) {
+    return message.parts
+      .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
+      .map((p) => p.text)
+      .join("");
+  }
+  return (message as any).text || (message as any).content || "";
 }
 
 export function ChatMessage({ message, animate = false }: ChatMessageProps) {
@@ -39,6 +41,22 @@ export function ChatMessage({ message, animate = false }: ChatMessageProps) {
         )}
 
         <div className={`overflow-hidden min-w-0 ${isUser ? "max-w-[85%] sm:max-w-[70%] bg-muted/60 text-foreground px-5 py-3.5 rounded-[24px] rounded-tr-md shadow-sm" : "flex-1 px-1 py-1"}`}>
+          {isUser && (message as any).experimental_attachments && (message as any).experimental_attachments.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {(message as any).experimental_attachments.map((a: any, i: number) => (
+                <div key={i} className="flex items-center gap-2 bg-background/50 rounded-lg p-2 text-xs border border-border/50 shadow-sm max-w-[200px]">
+                  {a.contentType?.startsWith('image/') ? (
+                    <img src={a.url} alt={a.name || "Attachment"} className="h-10 w-10 object-cover rounded-md shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 bg-muted/80 flex items-center justify-center rounded-md shrink-0">
+                      <Paperclip className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  )}
+                  <span className="truncate font-medium text-foreground/80">{a.name || "Attached File"}</span>
+                </div>
+              ))}
+            </div>
+          )}
           {!isUser && animate && displayedText === "" ? (
             <div className="h-6 flex items-center space-x-1 mt-2">
               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "0ms" }} />

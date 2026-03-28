@@ -122,7 +122,7 @@ export default function ChatPage() {
   );
 
   // ── Handle send ───────────────────────────────────────────────────────────
-  const handleSend = async (content: string) => {
+  const handleSend = async (content: string, files?: File[]) => {
     let activeSessionId = sessionId;
 
     if (!activeSessionId) {
@@ -131,7 +131,7 @@ export default function ChatPage() {
         const res: any = await chatService.createSession({
           modelId: selectedModelId,
           providerId: selectedProviderId ?? undefined,
-          title: content.slice(0, 80),
+          title: content.slice(0, 80) || "New Conversation",
         });
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
@@ -145,7 +145,17 @@ export default function ChatPage() {
       }
     }
 
-    sendMessage({ text: content });
+    let fileList: FileList | undefined;
+    if (files && files.length > 0) {
+      const dt = new DataTransfer();
+      files.forEach((file) => dt.items.add(file));
+      fileList = dt.files;
+    }
+
+    sendMessage({
+      text: content,
+      ...(fileList ? { files: fileList } : {}),
+    });
   };
 
   return (

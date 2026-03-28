@@ -1,11 +1,11 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain } from "lucide-react";
+import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiModel } from "@/utils/services/ai-model-service";
 import { AiConnection } from "@/utils/services/ai-connection-service";
 
 interface ChatInputProps {
-  onSend: (message: string) => void;
+  onSend: (message: string, files?: File[]) => void;
   disabled?: boolean;
   models?: AiModel[];
   selectedModelId?: string;
@@ -39,9 +39,11 @@ export function ChatInput({
   isLoadingProviders = false,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [providerOpen, setProviderOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -61,10 +63,22 @@ export function ChatInput({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+    }
+    if (e.target) e.target.value = "";
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSend = () => {
-    if (input.trim() && !disabled) {
-      onSend(input);
+    if ((input.trim() || files.length > 0) && !disabled) {
+      onSend(input, files);
       setInput("");
+      setFiles([]);
       if (textareaRef.current) {
         textareaRef.current.style.height = "auto";
       }
@@ -90,15 +104,41 @@ export function ChatInput({
   return (
     <div className="relative w-full max-w-4xl mx-auto flex flex-col bg-muted/30 backdrop-blur-xl border shadow-sm rounded-[28px] focus-within:bg-background focus-within:ring-2 focus-within:ring-border focus-within:shadow-md transition-all duration-300">
 
+      {files.length > 0 && (
+        <div className="flex flex-wrap gap-2 px-4 pt-3 pb-1">
+          {files.map((file, i) => (
+            <div key={i} className="flex items-center gap-1.5 bg-muted rounded-md px-2.5 py-1.5 text-xs shadow-sm border border-border/50">
+              <span className="truncate max-w-[150px] font-medium text-foreground/80">{file.name}</span>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => handleRemoveFile(i)}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Text row */}
       <div className="flex items-end px-2 pt-2 pb-1 md:px-3 md:pt-3">
         <Button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
           variant="ghost"
           size="icon"
           className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground mb-0.5 ml-1 hidden sm:flex"
         >
           <Paperclip className="h-5 w-5" />
         </Button>
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+        />
 
         <textarea
           ref={textareaRef}
@@ -206,7 +246,7 @@ export function ChatInput({
         </div>
 
         {/* Send button */}
-        {input.trim() ? (
+        {input.trim() || files.length > 0 ? (
           <Button
             size="icon"
             onClick={handleSend}
