@@ -4,8 +4,27 @@ import { Button } from "@/components/ui/button";
 import { AiModel } from "@/utils/services/ai-model-service";
 import { AiConnection } from "@/utils/services/ai-connection-service";
 
+import { container } from "@/utils/di/inversify.config";
+import StorageService from "@/utils/services/storage-service";
+
+const storageService = container.get(StorageService);
+
+export interface UploadedFileData {
+  url: string;
+  fileName: string;
+  contentType: string;
+}
+
+export interface UploadedFileState {
+  file: File;
+  url?: string;
+  contentType?: string;
+  isUploading: boolean;
+  error?: string;
+}
+
 interface ChatInputProps {
-  onSend: (message: string, files?: File[]) => void;
+  onSend: (message: string, files?: UploadedFileData[]) => void;
   disabled?: boolean;
   models?: AiModel[];
   selectedModelId?: string;
@@ -43,7 +62,7 @@ export function ChatInput({
   onStop,
 }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<UploadedFileState[]>([]);
   const [providerOpen, setProviderOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
@@ -67,9 +86,26 @@ export function ChatInput({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles((prev) => [...prev, ...Array.from(e.target.files!)]);
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      const newUploads = newFiles.map(file => ({ file, isUploading: true }));
+      
+      setFiles(prev => [...prev, ...newUploads]);
+
+      for (const newUpload of newUploads) {
+        try {
+          const res = await storageService.uploadFile(newUpload.file);
+          if (res.successResponse?.data) {
+             const data = res.successResponse.data;
+             setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, url: data.url, contentType: data.contentType || f.file.type } : f));
+          } else {
+             setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, error: "Upload failed" } : f));
+          }
+        } catch (err) {
+           setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, error: "Upload failed" } : f));
+        }
+      }
     }
     if (e.target) e.target.value = "";
   };
@@ -79,8 +115,12 @@ export function ChatInput({
   };
 
   const handleSend = () => {
-    if ((input.trim() || files.length > 0) && !disabled) {
-      onSend(input, files);
+    const isUploadingAny = files.some(f => f.isUploading);
+    if ((input.trim() || files.length > 0) && !disabled && !isUploadingAny) {
+      const validFiles: UploadedFileData[] = files
+        .filter(f => f.url && !f.error)
+        .map(f => ({ url: f.url!, fileName: f.file.name, contentType: f.contentType || f.file.type }));
+      onSend(input, validFiles);
       setInput("");
       setFiles([]);
       if (textareaRef.current) {
@@ -110,12 +150,15 @@ export function ChatInput({
 
       {files.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4 pt-3 pb-1">
-          {files.map((file, i) => (
-            <div key={i} className="flex items-center gap-1.5 bg-muted rounded-md px-2.5 py-1.5 text-xs shadow-sm border border-border/50">
-              <span className="truncate max-w-[150px] font-medium text-foreground/80">{file.name}</span>
+          {files.map((fileObj, i) => (
+            <div key={i} className={`flex items-center gap-1.5 bg-muted rounded-md px-2.5 py-1.5 text-xs shadow-sm border ${fileObj.error ? 'border-destructive/50 text-destructive' : 'border-border/50'}`}>
+              <span className="truncate max-w-[150px] font-medium text-foreground/80" title={fileObj.error || fileObj.file.name}>
+                {fileObj.file.name}
+              </span>
+              {fileObj.isUploading && <span className="animate-pulse h-2 w-2 bg-primary rounded-full ml-1" />}
               <button
                 type="button"
-                className="text-muted-foreground hover:text-destructive transition-colors"
+                className="text-muted-foreground hover:text-destructive transition-colors ml-1"
                 onClick={() => handleRemoveFile(i)}
               >
                 <X className="h-3.5 w-3.5" />
@@ -264,7 +307,7 @@ export function ChatInput({
             type="button"
             size="icon"
             onClick={handleSend}
-            disabled={disabled}
+            disabled={disabled || files.some(f => f.isUploading)}
             className="h-9 w-9 shrink-0 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-transform"
           >
             <SendHorizontal className="h-4 w-4" />

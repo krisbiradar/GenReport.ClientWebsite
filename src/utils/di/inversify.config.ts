@@ -9,6 +9,7 @@ import UserManagementService from '../services/user-management-service';
 import AiConnectionService from '../services/ai-connection-service';
 import AiModelService from '../services/ai-model-service';
 import ChatService from '../services/chat-service';
+import StorageService from '../services/storage-service';
 import 'reflect-metadata';
 const container = new Container();
 
@@ -21,6 +22,6 @@ container.bind<UserManagementService>(UserManagementService).toSelf().inSingleto
 container.bind<AiConnectionService>(AiConnectionService).toSelf().inSingletonScope();
 container.bind<AiModelService>(AiModelService).toSelf().inSingletonScope();
 container.bind<ChatService>(ChatService).toSelf().inSingletonScope();
+container.bind<StorageService>(StorageService).toSelf().inSingletonScope();
 
 export { container };
-

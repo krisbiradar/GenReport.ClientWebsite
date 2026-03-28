@@ -132,6 +132,57 @@ class ApiClient {
       );
     }
   }
+
+  async sendHttpPostMultipart<T extends object>(
+    endPoint: string,
+    formData: FormData,
+    queryParams?: URLSearchParams
+  ): Promise<HttpResponse<T>> {
+    try {
+      const response = await this.instance?.post<HttpResponse<T>>(
+        `${endPoint}?${queryParams?.toString() || ""}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data"
+          }
+        }
+      );
+      return (
+        response?.data ||
+        new HttpResponse(
+          new HttpErrorResponse(
+            HttpStatusCode.NotImplemented,
+            "NO RESPONSE FROM SERVER CHECK SERVER LOGS",
+            "NO_RESPONSE",
+            []
+          )
+        )
+      );
+    } catch (ex: any) {
+      if (axios.isAxiosError(ex)) {
+        const axiosError = ex as AxiosError;
+        console.error("AXIOS ERROR", ex);
+        if (axiosError.status == HttpStatusCode.BadRequest) {
+          return new HttpResponse(
+            new HttpErrorResponse(
+              HttpStatusCode.BadRequest,
+              "Invalid request",
+              "INVALID_REQUEST",
+              [JSON.stringify(axiosError.response?.data)]
+            )
+          );
+        }
+      }
+      const error = ex as Error;
+      console.warn("UNHANDLED ERROR");
+      console.error("ERROR IN POST MULTIPART REQUEST", error.message);
+      console.error("STACKTRACE :", error.stack);
+      return new HttpResponse(
+        new HttpErrorResponse(HttpStatusCode.InternalServerError, "", "", [])
+      );
+    }
+  }
   async addJwtToHeaders(config: any): Promise<any> {
     if (Constants.excludeJwtValidation.some((e) => (config.url as string).startsWith(e))) {
       return config;

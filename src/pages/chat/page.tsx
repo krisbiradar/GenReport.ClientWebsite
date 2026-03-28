@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { ChatMessage } from "@/components/chat/chat-message";
-import { ChatInput } from "@/components/chat/chat-input";
+import { ChatInput, UploadedFileData } from "@/components/chat/chat-input";
 import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
 import AiConnectionService, { AiConnection } from "@/utils/services/ai-connection-service";
@@ -42,6 +42,21 @@ export default function ChatPage() {
         modelId: selectedModelId,
         ...(sessionId ? { sessionId } : {}),
       }),
+      fetch: async (url, options) => {
+        const bodyObj = JSON.parse(options?.body as string);
+        const formData = new FormData();
+        
+        formData.append('messages', JSON.stringify(bodyObj.messages));
+        if (bodyObj.modelId) formData.append('modelId', bodyObj.modelId);
+        if (bodyObj.sessionId) formData.append('sessionId', bodyObj.sessionId);
+        
+        const newOptions = { ...options, body: formData };
+        const h = new Headers(newOptions.headers);
+        h.delete('Content-Type');
+        newOptions.headers = h;
+
+        return fetch(url, newOptions);
+      }
     }),
   });
 
@@ -122,7 +137,7 @@ export default function ChatPage() {
   );
 
   // ── Handle send ───────────────────────────────────────────────────────────
-  const handleSend = async (content: string, files?: File[]) => {
+  const handleSend = async (content: string, files?: UploadedFileData[]) => {
     let activeSessionId = sessionId;
 
     if (!activeSessionId) {
@@ -145,16 +160,16 @@ export default function ChatPage() {
       }
     }
 
-    let fileList: FileList | undefined;
-    if (files && files.length > 0) {
-      const dt = new DataTransfer();
-      files.forEach((file) => dt.items.add(file));
-      fileList = dt.files;
-    }
+    const fileParts = files?.map(f => ({
+      type: 'file' as const,
+      url: f.url,
+      mediaType: f.contentType,
+      filename: f.fileName
+    }));
 
     sendMessage({
       text: content,
-      ...(fileList ? { files: fileList } : {}),
+      ...(fileParts && fileParts.length > 0 ? { files: fileParts } : {}),
     });
   };
 
