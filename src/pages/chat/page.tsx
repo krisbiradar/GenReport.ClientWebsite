@@ -31,6 +31,16 @@ export default function ChatPage() {
   const chatService = container.get(ChatService);
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
+  const sessionIdRef = useRef<string | null>(sessionId);
+  useEffect(() => {
+    sessionIdRef.current = sessionId;
+  }, [sessionId]);
+
+  const selectedModelIdRef = useRef<string>(selectedModelId);
+  useEffect(() => {
+    selectedModelIdRef.current = selectedModelId;
+  }, [selectedModelId]);
+
   const { messages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({
       api: `${BASE_URL}/chat/sessions/messages`,
@@ -39,30 +49,15 @@ export default function ChatPage() {
         return token ? { Authorization: `Bearer ${token}` } : {};
       },
       body: () => ({
-        modelId: selectedModelId,
-        ...(sessionId ? { sessionId } : {}),
+        modelId: selectedModelIdRef.current,
+        ...(sessionIdRef.current ? { sessionId: sessionIdRef.current } : {}),
       }),
-      fetch: async (url, options) => {
-        const bodyObj = JSON.parse(options?.body as string);
-        const formData = new FormData();
-        
-        formData.append('messages', JSON.stringify(bodyObj.messages));
-        if (bodyObj.modelId) formData.append('modelId', bodyObj.modelId);
-        if (bodyObj.sessionId) formData.append('sessionId', bodyObj.sessionId);
-        
-        const newOptions = { ...options, body: formData };
-        const h = new Headers(newOptions.headers);
-        h.delete('Content-Type');
-        newOptions.headers = h;
-
-        return fetch(url, newOptions);
-      }
     }),
   });
 
   const isGenerating = status === "submitted" || status === "streaming";
 
-  // ── Load providers ────────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchProviders = async () => {
       setIsLoadingProviders(true);
@@ -82,7 +77,7 @@ export default function ChatPage() {
     fetchProviders();
   }, []);
 
-  // ── Load models ───────────────────────────────────────────────────────────
+
   useEffect(() => {
     const fetchModels = async () => {
       setIsLoadingModels(true);
@@ -150,8 +145,9 @@ export default function ChatPage() {
         });
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
-          activeSessionId = created.id;
-          setSessionId(created.id);
+          activeSessionId = String(created.id);
+          setSessionId(String(created.id));
+          sessionIdRef.current = String(created.id);
         }
       } catch (err) {
         console.error("Failed to create chat session", err);

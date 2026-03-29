@@ -100,10 +100,10 @@ export function ChatInput({
              const data = res.successResponse.data;
              setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, url: data.url, contentType: data.contentType || f.file.type } : f));
           } else {
-             setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, error: "Upload failed" } : f));
+             setFiles(prev => prev.filter(f => f.file !== newUpload.file));
           }
         } catch (err) {
-           setFiles(prev => prev.map(f => f.file === newUpload.file ? { ...f, isUploading: false, error: "Upload failed" } : f));
+           setFiles(prev => prev.filter(f => f.file !== newUpload.file));
         }
       }
     }

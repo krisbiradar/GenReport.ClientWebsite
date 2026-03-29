@@ -45,12 +45,22 @@ export async function getJwt() {
     await logOut();
     return;
   }
-  const { data } = await axios.get<{ token: string; refreshtoken: string }>(
-    `${baseURL}/refresh?token=${refreshToken}`
+  const { data } = await axios.post<any>(
+    `${baseURL}/refresh`,
+    { refreshToken }
   );
-  setJwt("jwt-token", data.token);
-  setJwt("jwt-refresh-token", data.refreshtoken);
-  return data.token;
+
+  const token = data?.successResponse?.data?.token ?? data.token;
+  const newRefreshToken = data?.successResponse?.data?.refreshToken ?? data.refreshtoken ?? data.refreshToken;
+
+  if (token) {
+    setJwt("jwt-token", token);
+  }
+  if (newRefreshToken) {
+    setJwt("jwt-refresh-token", newRefreshToken);
+  }
+
+  return token;
 }
 
 export function clearSession() {
