@@ -3,7 +3,6 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { useTypewriter } from "@/hooks/use-typewriter";
 import { Sparkles, Paperclip } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { PdfViewer } from "./pdf-viewer";
@@ -27,8 +26,7 @@ function getTextContent(message: UIMessage): string {
 export function ChatMessage({ message, animate = false }: ChatMessageProps) {
   const isUser = message.role === "user";
   const rawContent = getTextContent(message);
-  const { displayedText } = useTypewriter(rawContent, 15, animate && !isUser);
-  const contentToRender = isUser ? rawContent : (animate ? displayedText : rawContent);
+  const contentToRender = rawContent;
 
   return (
     <div className={`flex w-full px-4 md:px-8 py-2 md:py-4 ${isUser ? "justify-end" : "justify-start"}`}>
@@ -57,7 +55,7 @@ export function ChatMessage({ message, animate = false }: ChatMessageProps) {
               ))}
             </div>
           )}
-          {!isUser && animate && displayedText === "" ? (
+          {!isUser && animate && rawContent === "" ? (
             <div className="h-6 flex items-center space-x-1 mt-2">
               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "0ms" }} />
               <span className="animate-bounce h-2 w-2 bg-primary/60 rounded-full inline-block" style={{ animationDelay: "150ms" }} />
