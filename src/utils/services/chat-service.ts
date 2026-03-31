@@ -10,9 +10,21 @@ export interface ChatSession {
   updatedAt: string;
 }
 
+export interface ChatMessageDto {
+  id: string;
+  role: "user" | "assistant" | "data";
+  content: string;
+  createdAt?: string;
+}
+
+export interface ChatSessionDetails extends ChatSession {
+  messages: ChatMessageDto[];
+}
+
 export interface CreateChatSessionRequest {
   modelId: string;
   providerId?: string;
+  databaseConnectionId?: string;
   title?: string;
 }
 
@@ -25,6 +37,10 @@ export interface UpdateSessionProviderRequest {
 @injectable()
 class ChatService {
   constructor(@inject(ApiClient) private apiClient: ApiClient) { }
+
+  async getSession(id: string) {
+    return await this.apiClient.sendHttpGet<ChatSessionDetails>(`chat/sessions/${id}`);
+  }
 
   async getSessions() {
     return await this.apiClient.sendHttpGet<ChatSession[]>("chat/sessions");

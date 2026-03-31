@@ -8,7 +8,7 @@ import { GlobalPopupProvider } from "@/components/ui/global-popup";
 
 import HomePage from "@/pages/page";
 import LoginPage from "@/pages/onboarding/login/page";
-import PromptPage from "@/pages/queries/prompt/page";
+
 import ConnectionsPage from "@/pages/connections/page";
 import ConnectionDetailsPage from "@/pages/connections/details";
 import UsersPage from "@/pages/users/page";
@@ -81,9 +81,19 @@ function App() {
                 </ModuleAccessRoute>
               }
             />
-            <Route path="/queries/prompt" element={<PromptPage />} />
+
             <Route
               path="/chat"
+              element={
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ChatPage />
+                  </MainLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/chat/:id"
               element={
                 <ProtectedRoute>
                   <MainLayout>

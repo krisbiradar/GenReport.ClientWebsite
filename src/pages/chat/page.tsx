@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { useChat } from "@ai-sdk/react";
+import { useParams, useNavigate } from "react-router-dom";
+import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { ChatMessage } from "@/components/chat/chat-message";
 import { ChatInput, UploadedFileData } from "@/components/chat/chat-input";
@@ -7,13 +8,19 @@ import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
 import AiConnectionService, { AiConnection } from "@/utils/services/ai-connection-service";
 import ChatService from "@/utils/services/chat-service";
+import ConnectionService, { DatabaseConnection } from "@/utils/services/connection-service";
 import { getJwt } from "@/utils/helpers/window-helpers";
 import { useSelector } from "react-redux";
 import { AuthState } from "@/state-management/slices/auth-slice";
+import { Button } from "@/components/ui/button";
+import { Database, Cpu } from "lucide-react";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "";
 
 export default function ChatPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
@@ -22,12 +29,18 @@ export default function ChatPage() {
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [isLoadingProviders, setIsLoadingProviders] = useState<boolean>(true);
 
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [databases, setDatabases] = useState<DatabaseConnection[]>([]);
+  const [selectedDbId, setSelectedDbId] = useState<string>("");
+  const [isLoadingDbs, setIsLoadingDbs] = useState<boolean>(true);
+
+  const [sessionId, setSessionId] = useState<string | null>(id || null);
+  const [isSessionLoading, setIsSessionLoading] = useState<boolean>(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const aiModelService = container.get(AiModelService);
   const aiConnectionService = container.get(AiConnectionService);
+  const connectionService = container.get(ConnectionService);
   const chatService = container.get(ChatService);
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
 
@@ -41,7 +54,12 @@ export default function ChatPage() {
     selectedModelIdRef.current = selectedModelId;
   }, [selectedModelId]);
 
-  const { messages, sendMessage, status, stop } = useChat({
+  const selectedDbIdRef = useRef<string>(selectedDbId);
+  useEffect(() => {
+    selectedDbIdRef.current = selectedDbId;
+  }, [selectedDbId]);
+
+  const { messages, setMessages, sendMessage, status, stop } = useChat({
     transport: new DefaultChatTransport({
       api: `${BASE_URL}/chat/sessions/messages`,
       headers: async (): Promise<Record<string, string>> => {
@@ -50,10 +68,41 @@ export default function ChatPage() {
       },
       body: () => ({
         modelId: selectedModelIdRef.current,
+        ...(selectedDbIdRef.current ? { databaseConnectionId: selectedDbIdRef.current } : {}),
         ...(sessionIdRef.current ? { sessionId: sessionIdRef.current } : {}),
       }),
     }),
   });
+
+  useEffect(() => {
+    if (id) {
+      setSessionId(id);
+      setIsSessionLoading(true);
+      
+      chatService.getSession(id)
+        .then((res: any) => {
+          const session = res?.successResponse?.data ?? res;
+          if (session && session.messages) {
+             const mappedMessages: UIMessage[] = session.messages.map((m: any) => ({
+                id: m.id || crypto.randomUUID(),
+                role: m.role || "assistant",
+                content: m.content || "",
+                createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
+             }));
+             setMessages(mappedMessages);
+          }
+        })
+        .catch(err => {
+          console.error("Failed to load session:", err);
+        })
+        .finally(() => {
+          setIsSessionLoading(false);
+        });
+    } else {
+      setSessionId(null);
+      setMessages([]);
+    }
+  }, [id, chatService, setMessages]);
 
   const isGenerating = status === "submitted" || status === "streaming";
 
@@ -76,6 +125,25 @@ export default function ChatPage() {
     };
     fetchProviders();
   }, []);
+
+  useEffect(() => {
+    const fetchDatabases = async () => {
+      setIsLoadingDbs(true);
+      try {
+        const res: any = await connectionService.getConnections();
+        const data = res.successResponse?.data ?? res;
+        if (Array.isArray(data)) {
+           setDatabases(data);
+           if (data.length > 0) setSelectedDbId(String(data[0].id));
+        }
+      } catch {
+        setDatabases([]);
+      } finally {
+        setIsLoadingDbs(false);
+      }
+    };
+    fetchDatabases();
+  }, [connectionService]);
 
 
   useEffect(() => {
@@ -141,6 +209,7 @@ export default function ChatPage() {
         const res: any = await chatService.createSession({
           modelId: selectedModelId,
           providerId: selectedProviderId ?? undefined,
+          databaseConnectionId: selectedDbId || undefined,
           title: content.slice(0, 80) || "New Conversation",
         });
         const created = res?.successResponse?.data ?? res;
@@ -169,12 +238,54 @@ export default function ChatPage() {
     });
   };
 
+  if (!isLoadingProviders && providers.length === 0) {
+    return (
+      <div className="flex flex-col h-full w-full bg-background items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
+        <div className="max-w-md w-full flex flex-col items-center text-center space-y-6 bg-muted/20 p-8 rounded-3xl border shadow-sm">
+          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 shadow-inner">
+             <Cpu className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold tracking-tight">AI Connection Required</h2>
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
+              You haven't configured any AI models yet. An active AI connection is necessary for the assistant to generate responses.
+            </p>
+          </div>
+          <Button onClick={() => navigate("/ai-llm-config")} size="lg" className="rounded-full mt-4 w-full sm:w-auto shadow-sm">
+            Configure AI Connection
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoadingDbs && databases.length === 0) {
+    return (
+      <div className="flex flex-col h-full w-full bg-background items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
+        <div className="max-w-md w-full flex flex-col items-center text-center space-y-6 bg-muted/20 p-8 rounded-3xl border shadow-sm">
+          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 shadow-inner">
+             <Database className="h-8 w-8" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-semibold tracking-tight">Database Missing</h2>
+            <p className="text-[15px] text-muted-foreground leading-relaxed">
+              We need a target database to query against. Please configure your source database connection to continue.
+            </p>
+          </div>
+          <Button onClick={() => navigate("/database-connections")} size="lg" className="rounded-full mt-4 w-full sm:w-auto shadow-sm">
+            Add Database Connection
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full bg-background relative font-sans">
 
       {/* Header — greeting only */}
       <div className="flex flex-col px-6 pt-6 pb-2 shrink-0 max-w-4xl mx-auto w-full">
-        {messages.length === 0 && (
+        {messages.length === 0 && !isSessionLoading && (
           <div className="mt-8 mb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/50">
               Hello, {firstName || "User"}
@@ -183,6 +294,14 @@ export default function ChatPage() {
               How can I help you today?
             </h2>
           </div>
+        )}
+
+        {messages.length === 0 && isSessionLoading && (
+           <div className="flex w-full items-center justify-center h-48 mt-8">
+             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "0ms" }} />
+             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "150ms" }} />
+             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "300ms" }} />
+           </div>
         )}
       </div>
 
@@ -219,7 +338,7 @@ export default function ChatPage() {
             onSend={handleSend}
             onStop={stop}
             isGenerating={isGenerating}
-            disabled={isGenerating || isCreatingSession}
+            disabled={isGenerating || isCreatingSession || isSessionLoading}
             models={models}
             selectedModelId={selectedModelId}
             onModelChange={setSelectedModelId}
@@ -228,6 +347,10 @@ export default function ChatPage() {
             selectedProviderId={selectedProviderId}
             onProviderChange={handleProviderChange}
             isLoadingProviders={isLoadingProviders}
+            databases={databases}
+            selectedDbId={selectedDbId}
+            onDbChange={setSelectedDbId}
+            isLoadingDbs={isLoadingDbs}
           />
           <p className="text-center text-[12px] text-muted-foreground mt-4 font-medium max-w-2xl mx-auto">
             AI generated responses can make mistakes. Check important information.

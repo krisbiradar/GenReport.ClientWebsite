@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
-import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain, X, Square } from "lucide-react";
+import { SendHorizontal, Paperclip, ChevronDown, Cpu, Sparkles, Bot, Brain, X, Square, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiModel } from "@/utils/services/ai-model-service";
 import { AiConnection } from "@/utils/services/ai-connection-service";
+import { DatabaseConnection } from "@/utils/services/connection-service";
 
 import { container } from "@/utils/di/inversify.config";
 import StorageService from "@/utils/services/storage-service";
@@ -35,6 +36,11 @@ interface ChatInputProps {
   selectedProviderId?: string | null;
   onProviderChange?: (id: string) => void;
   isLoadingProviders?: boolean;
+  // Database selector
+  databases?: DatabaseConnection[];
+  selectedDbId?: string;
+  onDbChange?: (id: string) => void;
+  isLoadingDbs?: boolean;
   isGenerating?: boolean;
   onStop?: () => void;
 }
@@ -58,6 +64,10 @@ export function ChatInput({
   selectedProviderId = null,
   onProviderChange,
   isLoadingProviders = false,
+  databases = [],
+  selectedDbId = "",
+  onDbChange,
+  isLoadingDbs = false,
   isGenerating = false,
   onStop,
 }: ChatInputProps) {
@@ -288,6 +298,27 @@ export function ChatInput({
                 </option>
               ))}
             </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          </div>
+
+          {/* ── DB selector ── */}
+          <div className="relative">
+            <select
+              value={selectedDbId}
+              onChange={(e) => onDbChange?.(e.target.value)}
+              disabled={databases.length === 0}
+              className="appearance-none h-8 pl-8 pr-7 max-w-[140px] sm:max-w-[200px] truncate rounded-full bg-muted/50 hover:bg-muted text-xs font-medium text-muted-foreground hover:text-foreground border border-transparent hover:border-border cursor-pointer transition-all focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+            >
+              {isLoadingDbs && <option value="">Loading DBs...</option>}
+              {!isLoadingDbs && databases.length === 0 && <option value="">No DBs</option>}
+              {!isLoadingDbs && databases.length > 0 && <option value="">Select DB...</option>}
+              {databases.map((db) => (
+                <option key={db.id} value={db.id} className="bg-background text-foreground">
+                  {db.name}
+                </option>
+              ))}
+            </select>
+            <Database className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
           </div>
         </div>
