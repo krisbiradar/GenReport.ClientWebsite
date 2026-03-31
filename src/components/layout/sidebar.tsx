@@ -201,29 +201,19 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             </div>
           )}
           <ul className="space-y-1 px-3">
-            <li key="static-chat">
-              <Link
-                to="/chat"
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-primary/10 hover:text-primary',
-                  location.pathname.startsWith('/chat') ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
-                  isCollapsed && 'justify-center px-0'
-                )}
-                title="AI Chat"
-              >
-                <LucideIcons.MessageSquare
-                  className={cn(
-                    'h-5 w-5',
-                    location.pathname.startsWith('/chat') ? 'text-primary' : 'text-muted-foreground'
-                  )}
-                />
-                {!isCollapsed && <span className="animate-fadeIn">AI Chat</span>}
-              </Link>
-            </li>
+
             {items.map((item: SidebarItem) => {
               const path = getRouteForSidebarItem(item.title);
               const isActive = location.pathname.startsWith(path) && (path !== '/' || location.pathname === '/');
-              const IconComponent = (LucideIcons as any)[item.iconClass] || LucideIcons.FileText;
+              const iconMap: Record<string, string> = {
+                "bi bi-database-gear": "Database",
+                "bi bi-people": "Users",
+                "bi bi-cpu": "Cpu",
+                "bi bi-file-earmark-bar-graph": "BarChart",
+                "bi bi-chat-dots": "MessageSquare"
+              };
+              const lucideName = iconMap[item.iconClass] || item.iconClass;
+              const IconComponent = (LucideIcons as any)[lucideName] || LucideIcons.FileText;
 
               return (
                 <li key={item.id}>
