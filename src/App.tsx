@@ -14,6 +14,7 @@ import ConnectionDetailsPage from "@/pages/connections/details";
 import UsersPage from "@/pages/users/page";
 import AiLlmConfigPage from "@/pages/ai-llm-config/page";
 import ChatPage from "@/pages/chat/page";
+import ReportsPage from "@/pages/reports/page";
 import ProtectedRoute from "@/components/guards/protected-route";
 import ModuleAccessRoute from "@/components/guards/module-access-route";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -78,6 +79,14 @@ function App() {
               element={
                 <ModuleAccessRoute>
                   <AiLlmConfigPage />
+                </ModuleAccessRoute>
+              }
+            />
+            <Route
+              path="/reports"
+              element={
+                <ModuleAccessRoute>
+                  <ReportsPage />
                 </ModuleAccessRoute>
               }
             />
