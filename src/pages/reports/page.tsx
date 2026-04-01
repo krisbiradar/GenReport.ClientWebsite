@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { FileText, Plus, Filter, Search } from "lucide-react";
+import { FileText, Plus, Filter, Search, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
 
 export default function ReportsPage() {
+  const navigate = useNavigate();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [reports, setReports] = useState<any[]>([]); // Empty data state
   const [searchQuery, setSearchQuery] = useState("");
@@ -54,8 +56,12 @@ export default function ReportsPage() {
                 <p className="text-muted-foreground mt-3 max-w-md leading-relaxed text-[15px]">
                   You haven't run any queries to generate reports. Start a conversation with the AI or connect a database to begin analyzing your data.
                 </p>
-                <Button className="mt-8 gap-2 rounded-full px-6 shadow-sm" size="lg">
-                  <Plus className="h-4 w-4" /> Create your first report
+                <Button 
+                  onClick={() => navigate('/chat')} 
+                  className="mt-8 gap-2 rounded-full px-6 shadow-sm" 
+                  size="lg"
+                >
+                  <MessageSquare className="h-4 w-4" /> Generate your first report (via chat)
                 </Button>
               </Card>
             ) : (
