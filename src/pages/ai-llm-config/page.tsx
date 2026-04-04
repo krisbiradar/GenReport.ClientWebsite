@@ -13,6 +13,8 @@ import AiConnectionService, { AiConnection } from "@/utils/services/ai-connectio
 import { container } from "@/utils/di/inversify.config";
 import { showPopup } from "@/utils/helpers/popup-helper";
 import { AiConnectionModal } from "@/components/ai/ai-connection-modal";
+import { AiConfigsModal } from "@/components/ai/ai-configs-modal";
+import { Bot, Brain, Cpu, Sparkles, Plus, Pencil, Star, Settings2 } from "lucide-react";
 
 // Map provider string → Lucide icon
 function ProviderIcon({ provider }: { provider: string }) {
@@ -29,6 +31,7 @@ export default function AiLlmConfigPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfigsModalOpen, setIsConfigsModalOpen] = useState(false);
   const [editingConnection, setEditingConnection] = useState<AiConnection | null>(null);
 
 
@@ -67,6 +70,16 @@ export default function AiLlmConfigPage() {
   const handleModalClose = (wasSaved: boolean) => {
     setIsModalOpen(false);
     if (wasSaved) loadConnections();
+  };
+
+  const handleOpenConfigs = (conn: AiConnection) => {
+    setEditingConnection(conn);
+    setIsConfigsModalOpen(true);
+  };
+
+  const handleConfigsModalClose = () => {
+    setIsConfigsModalOpen(false);
+    setEditingConnection(null);
   };
 
 
@@ -187,6 +200,16 @@ export default function AiLlmConfigPage() {
                       </span>
                     </div>
 
+                    <Button 
+                      variant="secondary" 
+                      size="sm" 
+                      onClick={() => handleOpenConfigs(conn)} 
+                      className="w-full mt-2 bg-background hover:bg-muted border border-border/50 text-foreground shadow-sm group-hover:border-border transition-colors gap-2"
+                    >
+                      <Settings2 className="h-4 w-4" />
+                      Manage Prompts
+                    </Button>
+
                   </CardFooter>
                 </Card>
               ))}
@@ -201,6 +224,13 @@ export default function AiLlmConfigPage() {
         <AiConnectionModal
           connection={editingConnection}
           onClose={handleModalClose}
+        />
+      )}
+      
+      {isConfigsModalOpen && editingConnection && (
+        <AiConfigsModal
+          connection={editingConnection}
+          onClose={handleConfigsModalClose}
         />
       )}
 
