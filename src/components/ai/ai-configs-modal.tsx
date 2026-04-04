@@ -34,7 +34,7 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
   const [localPrompt, setLocalPrompt] = useState("");
   const [localIntent, setLocalIntent] = useState("");
 
-  const aiService = container.get(AiConnectionService);
+  const aiService = React.useMemo(() => container.get(AiConnectionService), []);
 
   const loadConfigs = async () => {
     setIsLoading(true);
