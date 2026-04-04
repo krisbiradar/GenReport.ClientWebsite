@@ -1,10 +1,15 @@
 export type PopupType = 'info' | 'error' | 'success' | 'warning';
 
+import React from 'react';
+
 export interface PopupOptions {
   title: string;
-  body: string;
+  body: string | React.ReactNode;
   type?: PopupType;
   onClose?: () => void;
+  actionText?: string;
+  onAction?: () => void;
+  closeText?: string;
 }
 
 export function showPopup(options: PopupOptions) {

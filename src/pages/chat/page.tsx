@@ -10,6 +10,7 @@ import AiConnectionService, { AiConnection } from "@/utils/services/ai-connectio
 import ChatService from "@/utils/services/chat-service";
 import ConnectionService, { DatabaseConnection } from "@/utils/services/connection-service";
 import { getJwt } from "@/utils/helpers/window-helpers";
+import { showPopup } from "@/utils/helpers/popup-helper";
 import { useSelector } from "react-redux";
 import { AuthState } from "@/state-management/slices/auth-slice";
 import { Button } from "@/components/ui/button";
@@ -60,6 +61,29 @@ export default function ChatPage() {
   }, [selectedDbId]);
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
+    onError: (err) => {
+      if (err.message && (err.message.includes("ERR_CONTEXT_WINDOW_EXCEEDED") || err.message.includes("Context Window Exceeded"))) {
+        showPopup({
+          title: "Context Window Exceeded",
+          body: (
+            <div className="space-y-3">
+              <p className="text-[15px]">The conversation has grown too long for the AI model to process. Please start a new chat to continue.</p>
+              <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md border mt-2">
+                <strong>Note:</strong> Administrators can configure the maximum context window size limits in the AI connection settings.
+              </p>
+            </div>
+          ),
+          type: "warning",
+          actionText: "New Chat",
+          onAction: () => {
+            navigate("/chat");
+            setSessionId(null);
+            setMessages([]);
+          },
+          closeText: "Dismiss"
+        });
+      }
+    },
     transport: new DefaultChatTransport({
       api: `${BASE_URL}/chat/sessions/messages`,
       headers: async (): Promise<Record<string, string>> => {

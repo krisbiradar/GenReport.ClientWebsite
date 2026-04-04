@@ -50,9 +50,20 @@ export function GlobalPopupProvider() {
             <p className="text-sm text-muted-foreground leading-relaxed">{options.body}</p>
           </div>
         </div>
-        <div className="mt-8 flex justify-end">
-          <Button onClick={handleClose} className="min-w-[100px]">
-            Got it
+        <div className="mt-8 flex justify-end gap-3">
+          {options.actionText && options.onAction && (
+             <Button 
+               onClick={() => {
+                 options.onAction?.();
+                 setIsOpen(false);
+               }} 
+               className="min-w-[100px]"
+             >
+               {options.actionText}
+             </Button>
+          )}
+          <Button variant={options.actionText ? "outline" : "default"} onClick={handleClose} className="min-w-[100px]">
+            {options.closeText || "Got it"}
           </Button>
         </div>
       </div>

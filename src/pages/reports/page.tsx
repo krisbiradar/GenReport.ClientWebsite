@@ -18,7 +18,7 @@ export default function ReportsPage() {
 
       <main className="flex-1 overflow-y-auto w-full bg-muted/10">
         <div className="container p-6 md:p-8 space-y-8 animate-fadeIn max-w-[1400px] mx-auto">
-          
+
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex flex-col gap-2">
               <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
@@ -38,8 +38,8 @@ export default function ReportsPage() {
 
           <div className="flex items-center max-w-md w-full relative">
             <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search reports..." 
+            <Input
+              placeholder="Search reports..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 h-10 w-full bg-card shadow-sm border-border/60"
@@ -56,9 +56,9 @@ export default function ReportsPage() {
                 <p className="text-muted-foreground mt-3 max-w-md leading-relaxed text-[15px]">
                   You haven't run any queries to generate reports. Start a conversation with the AI or connect a database to begin analyzing your data.
                 </p>
-                <Button 
-                  onClick={() => navigate('/chat')} 
-                  className="mt-8 gap-2 rounded-full px-6 shadow-sm" 
+                <Button
+                  onClick={() => navigate('/chat')}
+                  className="mt-8 gap-2 rounded-full px-6 shadow-sm"
                   size="lg"
                 >
                   <MessageSquare className="h-4 w-4" /> Generate your first report (via chat)
@@ -66,11 +66,11 @@ export default function ReportsPage() {
               </Card>
             ) : (
               <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full">
-                 {/* Reserved for report cards mapping */}
+                {/* Reserved for report cards mapping */}
               </div>
             )}
           </div>
-          
+
         </div>
       </main>
     </div>
