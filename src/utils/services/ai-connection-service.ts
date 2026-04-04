@@ -88,6 +88,36 @@ export interface TestAiConnectionRequest {
   chatEndpointUrl?: string;
 }
 
+export enum AiConfigType {
+  Unknown = 0,
+  IntentClassifier = 1,
+  ChatSystemPrompt = 2
+}
+
+export interface AiConfig {
+  id: number;
+  type: AiConfigType;
+  value: string;
+  aiConnectionId: number;
+  modelId?: string;
+  isActive: boolean;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateAiConfigRequest {
+  type: AiConfigType;
+  value: string;
+  modelId?: string;
+}
+
+export interface UpdateAiConfigRequest {
+  value?: string;
+  isActive?: boolean;
+  modelId?: string;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -152,6 +182,28 @@ class AiConnectionService {
     }
     return await this.apiClient.sendHttpGet<AiProviderModel[]>(
       `ai/providers/${provider.toLowerCase()}/models`
+    );
+  }
+
+  // ── AI Configurations ───────────────────────────────────────────────────────
+
+  async getConfigs(connectionId: number) {
+    return await this.apiClient.sendHttpGet<AiConfig[]>(
+      `ai/connections/${connectionId}/configs`
+    );
+  }
+
+  async addConfig(connectionId: number, req: CreateAiConfigRequest) {
+    return await this.apiClient.sendHttpPost<HttpResponse<AiConfig>>(
+      req,
+      `ai/connections/${connectionId}/configs`
+    );
+  }
+
+  async updateConfig(connectionId: number, configId: number, req: UpdateAiConfigRequest) {
+    return await this.apiClient.sendHttpPut<HttpResponse<any>>(
+      `ai/connections/${connectionId}/configs/${configId}`,
+      req
     );
   }
 }
