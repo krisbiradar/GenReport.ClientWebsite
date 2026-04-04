@@ -14,7 +14,7 @@ import { container } from "@/utils/di/inversify.config";
 import { showPopup } from "@/utils/helpers/popup-helper";
 import { AiConnectionModal } from "@/components/ai/ai-connection-modal";
 import { AiConfigsModal } from "@/components/ai/ai-configs-modal";
-import { Settings2 } from "lucide-react";
+import { Bot, Brain, Cpu, Sparkles, Plus, Pencil, Star, Settings2 } from "lucide-react";
 
 // Map provider string → Lucide icon
 function ProviderIcon({ provider }: { provider: string }) {
