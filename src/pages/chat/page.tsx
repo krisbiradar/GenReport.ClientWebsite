@@ -205,7 +205,9 @@ export default function ChatPage() {
   }, [messages]);
 
   // ── Filter models when provider or allModels changes ─────────────────────
+  // ── Filter models when provider or allModels changes ─────────────────────
   useEffect(() => {
+    if (isLoadingModels) return; // wait until models are fully fetched
     const provider = providers.find((p) => String(p.id) === selectedProviderId);
     if (!provider) return;
 
@@ -228,7 +230,7 @@ export default function ChatPage() {
       setModels([fallback]);
       setSelectedModelId(provider.defaultModel);
     }
-  }, [selectedProviderId, allModels, providers]);
+  }, [selectedProviderId, allModels, providers, isLoadingModels]);
 
   // ── Handle provider change ────────────────────────────────────────────────
   const handleProviderChange = useCallback(
