@@ -22,6 +22,8 @@ export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // All models fetched from the server (all providers)
+  const [allModels, setAllModels] = useState<AiModel[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
@@ -187,13 +189,10 @@ export default function ChatPage() {
               flatModels.push(group as AiModel);
             }
           }
-          if (flatModels.length > 0) {
-            setModels(flatModels);
-            setSelectedModelId(flatModels[0].id);
-          }
+          setAllModels(flatModels);
         }
       } catch {
-        setModels([]);
+        setAllModels([]);
       } finally {
         setIsLoadingModels(false);
       }
@@ -204,6 +203,34 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ── Filter models when provider or allModels changes ─────────────────────
+  // ── Filter models when provider or allModels changes ─────────────────────
+  useEffect(() => {
+    if (isLoadingModels) return; // wait until models are fully fetched
+    const provider = providers.find((p) => String(p.id) === selectedProviderId);
+    if (!provider) return;
+
+    const filtered = allModels.filter(
+      (m) => m.provider?.toLowerCase() === provider.provider.toLowerCase()
+    );
+
+    setModels(filtered);
+    if (filtered.length > 0) {
+      // Prefer the provider's defaultModel if present in the list
+      const preferred = filtered.find((m) => m.id === provider.defaultModel);
+      setSelectedModelId(preferred ? preferred.id : filtered[0].id);
+    } else {
+      // Fallback: synthesize an entry from the connection's defaultModel
+      const fallback: AiModel = {
+        id: provider.defaultModel,
+        name: provider.defaultModel,
+        provider: provider.provider,
+      };
+      setModels([fallback]);
+      setSelectedModelId(provider.defaultModel);
+    }
+  }, [selectedProviderId, allModels, providers, isLoadingModels]);
 
   // ── Handle provider change ────────────────────────────────────────────────
   const handleProviderChange = useCallback(

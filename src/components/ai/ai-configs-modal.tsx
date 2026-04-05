@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { X, Loader2, Save, FileClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { container } from "@/utils/di/inversify.config";
 import AiConnectionService, {
   AiConnection,
   AiConfig,
   AiConfigType,
+  AiProviderModel,
   CreateAiConfigRequest,
 } from "@/utils/services/ai-connection-service";
 import { showPopup } from "@/utils/helpers/popup-helper";
+
+const INPUT_CLASS =
+  "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50";
 
 interface AiConfigsModalProps {
   connection: AiConnection;
@@ -34,6 +39,12 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
   const [localPrompt, setLocalPrompt] = useState("");
   const [localIntent, setLocalIntent] = useState("");
 
+  // Model selector
+  const isOllama = connection.provider.toLowerCase() === "ollama";
+  const [selectedModel, setSelectedModel] = useState(connection.defaultModel);
+  const [availableModels, setAvailableModels] = useState<AiProviderModel[]>([]);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+
   const aiService = React.useMemo(() => container.get(AiConnectionService), []);
 
   const loadConfigs = async () => {
@@ -41,13 +52,13 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
     try {
       const res = await aiService.getConfigs(connection.id);
       const data = res.successResponse?.data || ([] as AiConfig[]);
-      
+
       const pConfig = data.find((c: AiConfig) => c.type === AiConfigType.ChatSystemPrompt) || null;
       const iConfig = data.find((c: AiConfig) => c.type === AiConfigType.IntentClassifier) || null;
-      
+
       setPromptConfig(pConfig);
       setIntentConfig(iConfig);
-      
+
       setLocalPrompt(pConfig?.value || "");
       setLocalIntent(iConfig?.value || "");
     } catch {
@@ -61,6 +72,29 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
     loadConfigs();
   }, [connection.id]);
 
+  // Fetch models whenever the modal opens (based on provider)
+  useEffect(() => {
+    if (isOllama) return; // free-text for Ollama
+
+    const fetchModels = async () => {
+      setIsLoadingModels(true);
+      try {
+        const res = await aiService.getModels(connection.provider);
+        if (res.successResponse?.data) {
+          setAvailableModels(res.successResponse.data);
+        } else {
+          setAvailableModels([]);
+        }
+      } catch {
+        setAvailableModels([]);
+      } finally {
+        setIsLoadingModels(false);
+      }
+    };
+
+    fetchModels();
+  }, [connection.provider]);
+
   const hasPromptChanged = localPrompt !== (promptConfig?.value || "");
   const hasIntentChanged = localIntent !== (intentConfig?.value || "");
 
@@ -68,40 +102,40 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
     // Only save the active tab if it's changed to keep things simple
     const isPromptTab = activeTab === "system_prompt";
     const hasChanges = isPromptTab ? hasPromptChanged : hasIntentChanged;
-    
+
     if (!hasChanges) {
       return;
     }
 
     if (isPromptTab && !localPrompt.trim()) {
-       showPopup({ title: "Validation", body: "System prompt cannot be empty.", type: "error" });
-       return;
+      showPopup({ title: "Validation", body: "System prompt cannot be empty.", type: "error" });
+      return;
     }
     if (!isPromptTab && !localIntent.trim()) {
-       showPopup({ title: "Validation", body: "Intent classifier cannot be empty.", type: "error" });
-       return;
+      showPopup({ title: "Validation", body: "Intent classifier cannot be empty.", type: "error" });
+      return;
     }
 
     setIsSaving(true);
     try {
-       const req: CreateAiConfigRequest = {
-         type: isPromptTab ? AiConfigType.ChatSystemPrompt : AiConfigType.IntentClassifier,
-         value: isPromptTab ? localPrompt : localIntent,
-         modelId: connection.defaultModel // Or pass overriding modelId if needed
-       };
+      const req: CreateAiConfigRequest = {
+        type: isPromptTab ? AiConfigType.ChatSystemPrompt : AiConfigType.IntentClassifier,
+        value: isPromptTab ? localPrompt : localIntent,
+        modelId: selectedModel || connection.defaultModel,
+      };
 
-       const res = await aiService.addConfig(connection.id, req);
-       
-       if (res?.successResponse) {
-          showPopup({ title: "Success", body: "Configuration updated successfully.", type: "success" });
-          await loadConfigs();
-       } else {
-          showPopup({ title: "Error", body: res?.errorResponse?.message || "Failed to save configuration.", type: "error" });
-       }
+      const res = await aiService.addConfig(connection.id, req);
+
+      if (res?.successResponse) {
+        showPopup({ title: "Success", body: "Configuration updated successfully.", type: "success" });
+        await loadConfigs();
+      } else {
+        showPopup({ title: "Error", body: res?.errorResponse?.message || "Failed to save configuration.", type: "error" });
+      }
     } catch {
-       showPopup({ title: "Error", body: "A network error occurred while saving.", type: "error" });
+      showPopup({ title: "Error", body: "A network error occurred while saving.", type: "error" });
     } finally {
-       setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -110,16 +144,16 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
     return (
       <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2 border-t border-border/50 pt-2">
         <div className="flex items-center gap-1.5">
-           <FileClock className="h-3 w-3" />
-           Version {config.version}
+          <FileClock className="h-3 w-3" />
+          Version {config.version}
         </div>
         <div>
-           Updated: {new Date(config.updatedAt).toLocaleString()}
+          Updated: {new Date(config.updatedAt).toLocaleString()}
         </div>
         {config.modelId && (
-           <div className="bg-secondary/50 px-1.5 rounded">
-              Model Override: {config.modelId}
-           </div>
+          <div className="bg-secondary/50 px-1.5 rounded">
+            Model Override: {config.modelId}
+          </div>
         )}
       </div>
     );
@@ -128,7 +162,7 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-card rounded-xl shadow-2xl border border-border/50 overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col">
-        
+
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-muted/10 shrink-0">
           <div>
@@ -136,12 +170,50 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
               Manage Prompts &amp; Configs
             </h2>
             <p className="text-sm text-muted-foreground mt-0.5">
-               {connection.provider} — {connection.defaultModel}
+              {connection.provider} — {connection.defaultModel}
             </p>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
-            <X className="h-4 w-4" />
-          </Button>
+          {/* Model selector in header */}
+          <div className="flex items-center gap-3">
+            <div className="relative min-w-[200px]">
+              {isOllama ? (
+                <Input
+                  id="configs-model"
+                  value={selectedModel}
+                  onChange={(e) => setSelectedModel(e.target.value)}
+                  placeholder="e.g. llama3"
+                  className="h-8 text-xs"
+                />
+              ) : (
+                <div className="relative">
+                  <select
+                    id="configs-model"
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    disabled={isLoadingModels}
+                    className={`${INPUT_CLASS} h-8 text-xs pr-8`}
+                  >
+                    {availableModels.length === 0 && !isLoadingModels && (
+                      <option value={connection.defaultModel}>{connection.defaultModel}</option>
+                    )}
+                    {availableModels.map((m) => (
+                      <option key={m.modelId} value={m.modelId}>
+                        {m.modelName}
+                      </option>
+                    ))}
+                  </select>
+                  {isLoadingModels && (
+                    <div className="absolute right-8 top-1/2 -translate-y-1/2">
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 rounded-full">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Tab bar */}
@@ -149,11 +221,10 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
           <button
             type="button"
             onClick={() => setActiveTab("system_prompt")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors focus-visible:outline-none flex justify-center items-center gap-2 ${
-              activeTab === "system_prompt"
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`flex-1 py-3 text-sm font-medium transition-colors focus-visible:outline-none flex justify-center items-center gap-2 ${activeTab === "system_prompt"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             System Prompt
             {hasPromptChanged && <span className="h-2 w-2 rounded-full bg-orange-500"></span>}
@@ -161,11 +232,10 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
           <button
             type="button"
             onClick={() => setActiveTab("intent_classifier")}
-            className={`flex-1 py-3 text-sm font-medium transition-colors focus-visible:outline-none flex justify-center items-center gap-2 ${
-              activeTab === "intent_classifier"
-                ? "border-b-2 border-primary text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`flex-1 py-3 text-sm font-medium transition-colors focus-visible:outline-none flex justify-center items-center gap-2 ${activeTab === "intent_classifier"
+              ? "border-b-2 border-primary text-primary"
+              : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Intent Classifier
             {hasIntentChanged && <span className="h-2 w-2 rounded-full bg-orange-500"></span>}
@@ -174,53 +244,53 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
 
         {/* Body */}
         <div className="overflow-y-auto flex-1 p-6 relative min-h-[300px]">
-           {isLoading ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[1px] z-10">
-                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-           ) : null}
+          {isLoading ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[1px] z-10">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : null}
 
-           {activeTab === "system_prompt" ? (
-             <div className="space-y-4 h-full flex flex-col">
-               <div className="space-y-2 flex-grow">
-                 <Label htmlFor="system-prompt" className="flex justify-between items-center">
-                   <span>Base System Prompt</span>
-                 </Label>
-                 <textarea
-                   id="system-prompt"
-                   name="systemPrompt"
-                   className={`${TEXTAREA_CLASS} h-full min-h-[200px] leading-relaxed font-mono text-xs`}
-                   value={localPrompt}
-                   onChange={(e) => setLocalPrompt(e.target.value)}
-                   placeholder="You are a helpful assistant..."
-                 />
-                 {renderConfigDetails(promptConfig)}
-                 <p className="text-xs text-muted-foreground mt-2">
-                   This prompt guides the general behavior and knowledge context of the assistant.
-                 </p>
-               </div>
-             </div>
-           ) : (
-             <div className="space-y-4 h-full flex flex-col">
-               <div className="space-y-2 flex-grow">
-                 <Label htmlFor="intent-classifier" className="flex justify-between items-center">
-                   <span>Intent Classifier Prompt</span>
-                 </Label>
-                 <textarea
-                   id="intent-classifier"
-                   name="intentClassifier"
-                   className={`${TEXTAREA_CLASS} h-full min-h-[200px] leading-relaxed font-mono text-xs`}
-                   value={localIntent}
-                   onChange={(e) => setLocalIntent(e.target.value)}
-                   placeholder="Analyze the following query and decide..."
-                 />
-                 {renderConfigDetails(intentConfig)}
-                 <p className="text-xs text-muted-foreground mt-2">
-                   This prompt is used as a zero-shot classifier to decide the user's intent. Do not modify the output formatting rules unless updating the schema.
-                 </p>
-               </div>
-             </div>
-           )}
+          {activeTab === "system_prompt" ? (
+            <div className="space-y-4 h-full flex flex-col">
+              <div className="space-y-2 flex-grow">
+                <Label htmlFor="system-prompt" className="flex justify-between items-center">
+                  <span>Base System Prompt</span>
+                </Label>
+                <textarea
+                  id="system-prompt"
+                  name="systemPrompt"
+                  className={`${TEXTAREA_CLASS} h-full min-h-[200px] leading-relaxed font-mono text-xs`}
+                  value={localPrompt}
+                  onChange={(e) => setLocalPrompt(e.target.value)}
+                  placeholder="You are a helpful assistant..."
+                />
+                {renderConfigDetails(promptConfig)}
+                <p className="text-xs text-muted-foreground mt-2">
+                  This prompt guides the general behavior and knowledge context of the assistant.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 h-full flex flex-col">
+              <div className="space-y-2 flex-grow">
+                <Label htmlFor="intent-classifier" className="flex justify-between items-center">
+                  <span>Intent Classifier Prompt</span>
+                </Label>
+                <textarea
+                  id="intent-classifier"
+                  name="intentClassifier"
+                  className={`${TEXTAREA_CLASS} h-full min-h-[200px] leading-relaxed font-mono text-xs`}
+                  value={localIntent}
+                  onChange={(e) => setLocalIntent(e.target.value)}
+                  placeholder="Analyze the following query and decide..."
+                />
+                {renderConfigDetails(intentConfig)}
+                <p className="text-xs text-muted-foreground mt-2">
+                  This prompt is used as a zero-shot classifier to decide the user's intent. Do not modify the output formatting rules unless updating the schema.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -228,11 +298,11 @@ export function AiConfigsModal({ connection, onClose }: AiConfigsModalProps) {
           <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
             Close
           </Button>
-          <Button 
-             type="button" 
-             onClick={handleSave} 
-             disabled={isSaving || (activeTab === "system_prompt" ? !hasPromptChanged : !hasIntentChanged)}
-             className="min-w-[120px]"
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving || (activeTab === "system_prompt" ? !hasPromptChanged : !hasIntentChanged)}
+            className="min-w-[120px]"
           >
             {isSaving ? (
               <>
