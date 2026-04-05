@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Bot, Brain, Cpu, Sparkles, Plus, Pencil, Star } from "lucide-react";
 import {
   Card,
   CardDescription,
