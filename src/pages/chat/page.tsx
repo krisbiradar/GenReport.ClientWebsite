@@ -15,6 +15,7 @@ import { useSelector } from "react-redux";
 import { AuthState } from "@/state-management/slices/auth-slice";
 import { Button } from "@/components/ui/button";
 import { Database, Cpu } from "lucide-react";
+import type { QueryResultState } from "@/components/chat/query-result";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "";
 
@@ -22,6 +23,8 @@ export default function ChatPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
+  // All models fetched from the server (all providers)
+  const [allModels, setAllModels] = useState<AiModel[]>([]);
   const [models, setModels] = useState<AiModel[]>([]);
   const [selectedModelId, setSelectedModelId] = useState<string>("");
   const [isLoadingModels, setIsLoadingModels] = useState<boolean>(true);
@@ -187,13 +190,10 @@ export default function ChatPage() {
               flatModels.push(group as AiModel);
             }
           }
-          if (flatModels.length > 0) {
-            setModels(flatModels);
-            setSelectedModelId(flatModels[0].id);
-          }
+          setAllModels(flatModels);
         }
       } catch {
-        setModels([]);
+        setAllModels([]);
       } finally {
         setIsLoadingModels(false);
       }
@@ -204,6 +204,34 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  // ── Filter models when provider or allModels changes ─────────────────────
+  // ── Filter models when provider or allModels changes ─────────────────────
+  useEffect(() => {
+    if (isLoadingModels) return; // wait until models are fully fetched
+    const provider = providers.find((p) => String(p.id) === selectedProviderId);
+    if (!provider) return;
+
+    const filtered = allModels.filter(
+      (m) => m.provider?.toLowerCase() === provider.provider.toLowerCase()
+    );
+
+    setModels(filtered);
+    if (filtered.length > 0) {
+      // Prefer the provider's defaultModel if present in the list
+      const preferred = filtered.find((m) => m.id === provider.defaultModel);
+      setSelectedModelId(preferred ? preferred.id : filtered[0].id);
+    } else {
+      // Fallback: synthesize an entry from the connection's defaultModel
+      const fallback: AiModel = {
+        id: provider.defaultModel,
+        name: provider.defaultModel,
+        provider: provider.provider,
+      };
+      setModels([fallback]);
+      setSelectedModelId(provider.defaultModel);
+    }
+  }, [selectedProviderId, allModels, providers, isLoadingModels]);
 
   // ── Handle provider change ────────────────────────────────────────────────
   const handleProviderChange = useCallback(
@@ -222,6 +250,30 @@ export default function ChatPage() {
     },
     [sessionId, chatService]
   );
+
+  // ── Handle query execution ────────────────────────────────────────────────
+  const handleRunQuery = useCallback(async (sql: string): Promise<QueryResultState> => {
+    const dbId = selectedDbIdRef.current;
+    if (!dbId) {
+      return { status: "error", error: "No database selected. Please select a database first." };
+    }
+    try {
+      const res: any = await chatService.executeQuery({ query: sql, databaseConnectionId: dbId });
+      const data = res?.successResponse?.data ?? res;
+      if (data?.error) {
+        return { status: "error", error: data.error };
+      }
+      const rows: Record<string, any>[] | undefined = data?.rows;
+      return {
+        status: "success",
+        html: data?.html,
+        rows,
+        rowCount: data?.rowCount ?? rows?.length,
+      };
+    } catch (err: any) {
+      return { status: "error", error: err?.message ?? "Failed to execute query." };
+    }
+  }, [chatService]);
 
   // ── Handle send ───────────────────────────────────────────────────────────
   const handleSend = async (content: string, files?: UploadedFileData[]) => {
@@ -337,6 +389,7 @@ export default function ChatPage() {
               key={m.id}
               message={m}
               animate={m.role === "assistant" && i === messages.length - 1 && status === "streaming"}
+              onRunQuery={m.role === "assistant" ? handleRunQuery : undefined}
             />
           ))}
 
