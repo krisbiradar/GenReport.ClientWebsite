@@ -15,6 +15,7 @@ import { useSelector } from "react-redux";
 import { AuthState } from "@/state-management/slices/auth-slice";
 import { Button } from "@/components/ui/button";
 import { Database, Cpu } from "lucide-react";
+import type { QueryResultState } from "@/components/chat/query-result";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "";
 
@@ -250,6 +251,30 @@ export default function ChatPage() {
     [sessionId, chatService]
   );
 
+  // ── Handle query execution ────────────────────────────────────────────────
+  const handleRunQuery = useCallback(async (sql: string): Promise<QueryResultState> => {
+    const dbId = selectedDbIdRef.current;
+    if (!dbId) {
+      return { status: "error", error: "No database selected. Please select a database first." };
+    }
+    try {
+      const res: any = await chatService.executeQuery({ query: sql, databaseConnectionId: dbId });
+      const data = res?.successResponse?.data ?? res;
+      if (data?.error) {
+        return { status: "error", error: data.error };
+      }
+      const rows: Record<string, any>[] | undefined = data?.rows;
+      return {
+        status: "success",
+        html: data?.html,
+        rows,
+        rowCount: data?.rowCount ?? rows?.length,
+      };
+    } catch (err: any) {
+      return { status: "error", error: err?.message ?? "Failed to execute query." };
+    }
+  }, [chatService]);
+
   // ── Handle send ───────────────────────────────────────────────────────────
   const handleSend = async (content: string, files?: UploadedFileData[]) => {
     let activeSessionId = sessionId;
@@ -364,6 +389,7 @@ export default function ChatPage() {
               key={m.id}
               message={m}
               animate={m.role === "assistant" && i === messages.length - 1 && status === "streaming"}
+              onRunQuery={m.role === "assistant" ? handleRunQuery : undefined}
             />
           ))}
 

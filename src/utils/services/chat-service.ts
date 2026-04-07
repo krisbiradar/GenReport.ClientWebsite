@@ -32,6 +32,18 @@ export interface UpdateSessionProviderRequest {
   providerId: string;
 }
 
+export interface ExecuteQueryRequest {
+  query: string;
+  databaseConnectionId: string;
+}
+
+export interface ExecuteQueryResult {
+  html?: string;
+  rows?: Record<string, any>[];
+  error?: string;
+  rowCount?: number;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -55,6 +67,10 @@ class ChatService {
       `chat/sessions/${sessionId}`,
       req
     );
+  }
+
+  async executeQuery(req: ExecuteQueryRequest) {
+    return await this.apiClient.sendHttpPost<ExecuteQueryResult>(req, "chat/execute-query");
   }
 }
 
