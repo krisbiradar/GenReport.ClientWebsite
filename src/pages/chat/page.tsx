@@ -103,6 +103,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (id) {
+      // Prevent refetching if we just locally created this session and navigated to it
+      if (sessionIdRef.current === id && messages.length > 0) return;
+
       setSessionId(id);
       setIsSessionLoading(true);
       
@@ -126,10 +129,13 @@ export default function ChatPage() {
           setIsSessionLoading(false);
         });
     } else {
+      stop();
       setSessionId(null);
       setMessages([]);
+      setSqlValidations(new Map());
+      correctedMsgIdsRef.current.clear();
     }
-  }, [id, chatService, setMessages]);
+  }, [id, chatService, setMessages, stop, messages.length]);
 
   const isGenerating = status === "submitted" || status === "streaming";
 
@@ -401,8 +407,9 @@ export default function ChatPage() {
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = String(created.id);
-          setSessionId(String(created.id));
-          sessionIdRef.current = String(created.id);
+          setSessionId(activeSessionId);
+          sessionIdRef.current = activeSessionId;
+          navigate(`/chat/${activeSessionId}`, { replace: true });
         }
       } catch (err) {
         console.error("Failed to create chat session", err);
