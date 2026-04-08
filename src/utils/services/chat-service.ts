@@ -49,6 +49,19 @@ export interface ValidateSqlRequest {
   query: string;
 }
 
+export enum QueryValidationStatus {
+  OK = 1,
+  NotReadOnly = 2,
+  ParseError = 3,
+  ExecutionError = 4,
+  Unsupported = 5
+}
+
+export interface QueryValidationResult {
+  status: QueryValidationStatus;
+  description: string;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -81,16 +94,44 @@ class ChatService {
   async validateSql(req: ValidateSqlRequest): Promise<{ isValid: boolean; error?: string }> {
     try {
       const res: any = await this.apiClient.sendHttpPost(req, "chat/messages/validate");
-      // If the API returned a successResponse, the query is valid (HTTP 200)
-      if (res?.successResponse) {
-        return { isValid: true };
+      
+      const resultData = res?.successResponse?.data || res?.successResponse || res;
+      
+      // If the backend returns the validation result inside successResponse
+      if (resultData && typeof resultData.status !== 'undefined') {
+        const isOk = resultData.status === 1 || resultData.Status === 1; // QueryValidationStatusOK
+        if (isOk) return { isValid: true };
+        return { 
+          isValid: false, 
+          error: resultData.description || resultData.Description || "Query validation failed" 
+        };
       }
+
+      if (res?.errorResponse?.errors?.[0]) {
+         try {
+             // In case the C# backend passed the 400 bad request through via our API client
+             const parsed = JSON.parse(res.errorResponse.errors[0]);
+             if (parsed && (typeof parsed.status !== 'undefined' || typeof parsed.Status !== 'undefined')) {
+                 const isOk = parsed.status === 1 || parsed.Status === 1;
+                 if (isOk) return { isValid: true };
+                 return { isValid: false, error: parsed.description || parsed.Description || "Query validation failed" };
+             }
+         } catch {
+             // Not JSON
+         }
+      }
+
       // Extract error message from the error response
-      const errMsg =
-        res?.errorResponse?.message ||
-        res?.errorResponse?.errors?.[0] ||
-        "Query validation failed";
-      return { isValid: false, error: errMsg };
+      if (res?.errorResponse) {
+        const errMsg =
+          res?.errorResponse?.message ||
+          res?.errorResponse?.errors?.[0] ||
+          "Query validation failed";
+        return { isValid: false, error: errMsg };
+      }
+
+      // Fallback
+      return { isValid: !!res?.successResponse };
     } catch (ex: any) {
       return { isValid: false, error: ex?.message || "Query validation failed" };
     }
