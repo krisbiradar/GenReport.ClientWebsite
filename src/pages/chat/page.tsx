@@ -137,6 +137,8 @@ export default function ChatPage() {
   // Map: messageId -> Map<sqlCode, validationStatus>
   const [sqlValidations, setSqlValidations] = useState<Map<string, Map<string, SqlValidationStatus>>>(new Map());
   const prevStatusRef = useRef<string>(status);
+  // Track message IDs that already triggered auto-correction to prevent infinite loops
+  const correctedMsgIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const prev = prevStatusRef.current;
@@ -151,12 +153,17 @@ export default function ChatPage() {
       const dbId = selectedDbIdRef.current;
       if (!dbId) return;
 
+      const msgId = lastAssistantMsg.id;
+
+      // Don't re-validate if we already auto-corrected this message
+      if (correctedMsgIdsRef.current.has(msgId)) return;
+
       const content = getTextContent(lastAssistantMsg);
 
       // Extract all SQL code blocks from the markdown
       const sqlLangsPattern = Array.from(SQL_LANGUAGES).join("|");
       const codeBlockRegex = new RegExp(
-        "```(?:" + sqlLangsPattern + ")\\s*\n([\\s\\S]*?)```",
+        "```(?:" + sqlLangsPattern + ")\\s*\\n([\\s\\S]*?)```",
         "gi"
       );
 
@@ -169,8 +176,6 @@ export default function ChatPage() {
 
       if (sqlBlocks.length === 0) return;
 
-      const msgId = lastAssistantMsg.id;
-
       // Set all blocks to "validating"
       setSqlValidations((prev) => {
         const next = new Map(prev);
@@ -182,11 +187,19 @@ export default function ChatPage() {
         return next;
       });
 
-      // Fire parallel validation calls
-      sqlBlocks.forEach((sql) => {
+      // Fire parallel validation calls and wait for all to complete
+      const validationPromises = sqlBlocks.map((sql) =>
         chatService
           .validateSql({ databaseConnectionId: dbId, query: sql })
-          .then((isValid) => {
+          .then((result) => ({ sql, ...result }))
+      );
+
+      Promise.allSettled(validationPromises).then((results) => {
+        const invalidQueries: { sql: string; error: string }[] = [];
+
+        for (const result of results) {
+          if (result.status === "fulfilled") {
+            const { sql, isValid, error } = result.value;
             setSqlValidations((prev) => {
               const next = new Map(prev);
               const msgMap = new Map(next.get(msgId) || new Map());
@@ -194,10 +207,42 @@ export default function ChatPage() {
               next.set(msgId, msgMap);
               return next;
             });
-          });
+            if (!isValid) {
+              invalidQueries.push({ sql, error: error || "Query validation failed" });
+            }
+          } else {
+            // Promise rejected — shouldn't happen since validateSql catches, but handle anyway
+            const sql = sqlBlocks[results.indexOf(result)];
+            setSqlValidations((prev) => {
+              const next = new Map(prev);
+              const msgMap = new Map(next.get(msgId) || new Map());
+              msgMap.set(sql, "invalid");
+              next.set(msgId, msgMap);
+              return next;
+            });
+            invalidQueries.push({ sql, error: "Validation request failed" });
+          }
+        }
+
+        // If there are invalid queries, auto-send a correction message
+        if (invalidQueries.length > 0) {
+          correctedMsgIdsRef.current.add(msgId);
+
+          const errorDetails = invalidQueries
+            .map(
+              (q, i) =>
+                `**Query ${invalidQueries.length > 1 ? `${i + 1}` : ""}:**\n\`\`\`sql\n${q.sql}\n\`\`\`\n**Error:** ${q.error}`
+            )
+            .join("\n\n");
+
+          const correctionMessage =
+            `The following SQL ${invalidQueries.length === 1 ? "query is" : "queries are"} invalid. Please fix ${invalidQueries.length === 1 ? "it" : "them"}:\n\n${errorDetails}`;
+
+          sendMessage({ text: correctionMessage });
+        }
       });
     }
-  }, [status, messages, chatService]);
+  }, [status, messages, chatService, sendMessage]);
 
   useEffect(() => {
     const fetchProviders = async () => {
