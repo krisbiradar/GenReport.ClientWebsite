@@ -1,24 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Sparkles, Paperclip, PlayCircle } from "lucide-react";
+import { Sparkles, Paperclip, PlayCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { PdfViewer } from "./pdf-viewer";
 import { QueryResult, QueryResultState } from "./query-result";
 import type { UIMessage } from "ai";
+
+export type SqlValidationStatus = "idle" | "validating" | "valid" | "invalid";
 
 interface ChatMessageProps {
   message: UIMessage;
   animate?: boolean;
   /** Called when user clicks Run on a SQL block. Must return result data. */
   onRunQuery?: (sql: string) => Promise<QueryResultState>;
+  /** Map of SQL code string → validation status, populated after response completes */
+  sqlValidations?: Map<string, SqlValidationStatus>;
 }
 
-const SQL_LANGUAGES = new Set(["sql", "tsql", "pgsql", "postgresql", "mysql", "plsql", "sqlite"]);
+export const SQL_LANGUAGES = new Set(["sql", "tsql", "pgsql", "postgresql", "mysql", "plsql", "sqlite"]);
 
-function getTextContent(message: UIMessage): string {
+export function getTextContent(message: UIMessage): string {
   if (message.parts) {
     return message.parts
       .filter((p): p is Extract<typeof p, { type: "text" }> => p.type === "text")
@@ -33,10 +37,12 @@ function SqlCodeBlock({
   lang,
   code,
   onRunQuery,
+  validationStatus = "idle",
 }: {
   lang: string;
   code: string;
   onRunQuery?: (sql: string) => Promise<QueryResultState>;
+  validationStatus?: SqlValidationStatus;
 }) {
   const [result, setResult] = useState<QueryResultState>({ status: "idle" });
 
@@ -57,7 +63,29 @@ function SqlCodeBlock({
     <div className="my-5 rounded-xl overflow-hidden border border-zinc-700/60 shadow-sm">
       {/* Header bar */}
       <div className="flex items-center px-4 py-2 bg-zinc-800 border-b border-zinc-700 font-sans">
-        <span className="text-xs text-zinc-400 font-medium flex-1">{lang}</span>
+        <span className="text-xs text-zinc-400 font-medium">{lang}</span>
+
+        {/* Validation badge */}
+        {validationStatus === "validating" && (
+          <span className="flex items-center gap-1.5 text-xs text-blue-400 ml-3 font-medium">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            Validating…
+          </span>
+        )}
+        {validationStatus === "valid" && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-400 ml-3 font-medium">
+            <CheckCircle2 className="h-3 w-3" />
+            Valid Query
+          </span>
+        )}
+        {validationStatus === "invalid" && (
+          <span className="flex items-center gap-1.5 text-xs text-red-400 ml-3 font-medium">
+            <XCircle className="h-3 w-3" />
+            Invalid Query
+          </span>
+        )}
+
+        <span className="flex-1" />
 
         {onRunQuery && (
           <button
@@ -98,7 +126,12 @@ function SqlCodeBlock({
   );
 }
 
-export function ChatMessage({ message, animate = false, onRunQuery }: ChatMessageProps) {
+export function ChatMessage({ message, animate = false, onRunQuery, sqlValidations }: ChatMessageProps) {
+  // Track which SQL block index we're rendering (reset each render pass)
+  const sqlBlockIndexRef = useRef(0);
+  sqlBlockIndexRef.current = 0;
+  // Collect ordered SQL snippets from validations map for index-based lookup
+  const sqlKeys = sqlValidations ? Array.from(sqlValidations.keys()) : [];
   const isUser = message.role === "user";
   const rawContent = getTextContent(message);
   const contentToRender = rawContent;
@@ -149,11 +182,14 @@ export function ChatMessage({ message, animate = false, onRunQuery }: ChatMessag
                     if (!inline && match) {
                       // SQL block — render with play button
                       if (SQL_LANGUAGES.has(lang) && !isUser) {
+                        const blockIdx = sqlBlockIndexRef.current++;
+                        const status = sqlValidations?.get(codeStr) ?? (blockIdx < sqlKeys.length ? sqlValidations?.get(sqlKeys[blockIdx]) : undefined) ?? "idle";
                         return (
                           <SqlCodeBlock
                             lang={lang}
                             code={codeStr}
                             onRunQuery={onRunQuery}
+                            validationStatus={status}
                           />
                         );
                       }

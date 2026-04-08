@@ -44,6 +44,11 @@ export interface ExecuteQueryResult {
   rowCount?: number;
 }
 
+export interface ValidateSqlRequest {
+  databaseConnectionId: string;
+  query: string;
+}
+
 // ── Service ───────────────────────────────────────────────────────────────────
 
 @injectable()
@@ -71,6 +76,16 @@ class ChatService {
 
   async executeQuery(req: ExecuteQueryRequest) {
     return await this.apiClient.sendHttpPost<ExecuteQueryResult>(req, "chat/execute-query");
+  }
+
+  async validateSql(req: ValidateSqlRequest): Promise<boolean> {
+    try {
+      const res: any = await this.apiClient.sendHttpPost(req, "chat/validate-sql");
+      // If the API returned a successResponse, the query is valid (HTTP 200)
+      return !!res?.successResponse;
+    } catch {
+      return false;
+    }
   }
 }
 

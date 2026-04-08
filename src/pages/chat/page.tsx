@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { ChatMessage } from "@/components/chat/chat-message";
+import { ChatMessage, SqlValidationStatus, SQL_LANGUAGES, getTextContent } from "@/components/chat/chat-message";
 import { ChatInput, UploadedFileData } from "@/components/chat/chat-input";
 import { container } from "@/utils/di/inversify.config";
 import AiModelService, { AiModel } from "@/utils/services/ai-model-service";
@@ -133,6 +133,71 @@ export default function ChatPage() {
 
   const isGenerating = status === "submitted" || status === "streaming";
 
+  // ── SQL validation on response completion ─────────────────────────────────
+  // Map: messageId -> Map<sqlCode, validationStatus>
+  const [sqlValidations, setSqlValidations] = useState<Map<string, Map<string, SqlValidationStatus>>>(new Map());
+  const prevStatusRef = useRef<string>(status);
+
+  useEffect(() => {
+    const prev = prevStatusRef.current;
+    prevStatusRef.current = status;
+
+    // Detect transition: streaming/submitted → ready (response just completed)
+    if (status === "ready" && (prev === "streaming" || prev === "submitted")) {
+      // Find the last assistant message
+      const lastAssistantMsg = [...messages].reverse().find((m) => m.role === "assistant");
+      if (!lastAssistantMsg) return;
+
+      const dbId = selectedDbIdRef.current;
+      if (!dbId) return;
+
+      const content = getTextContent(lastAssistantMsg);
+
+      // Extract all SQL code blocks from the markdown
+      const sqlLangsPattern = Array.from(SQL_LANGUAGES).join("|");
+      const codeBlockRegex = new RegExp(
+        "```(?:" + sqlLangsPattern + ")\\s*\n([\\s\\S]*?)```",
+        "gi"
+      );
+
+      const sqlBlocks: string[] = [];
+      let match: RegExpExecArray | null;
+      while ((match = codeBlockRegex.exec(content)) !== null) {
+        const sql = match[1].trim();
+        if (sql) sqlBlocks.push(sql);
+      }
+
+      if (sqlBlocks.length === 0) return;
+
+      const msgId = lastAssistantMsg.id;
+
+      // Set all blocks to "validating"
+      setSqlValidations((prev) => {
+        const next = new Map(prev);
+        const msgMap = new Map<string, SqlValidationStatus>();
+        for (const sql of sqlBlocks) {
+          msgMap.set(sql, "validating");
+        }
+        next.set(msgId, msgMap);
+        return next;
+      });
+
+      // Fire parallel validation calls
+      sqlBlocks.forEach((sql) => {
+        chatService
+          .validateSql({ databaseConnectionId: dbId, query: sql })
+          .then((isValid) => {
+            setSqlValidations((prev) => {
+              const next = new Map(prev);
+              const msgMap = new Map(next.get(msgId) || new Map());
+              msgMap.set(sql, isValid ? "valid" : "invalid");
+              next.set(msgId, msgMap);
+              return next;
+            });
+          });
+      });
+    }
+  }, [status, messages, chatService]);
 
   useEffect(() => {
     const fetchProviders = async () => {
@@ -390,6 +455,7 @@ export default function ChatPage() {
               message={m}
               animate={m.role === "assistant" && i === messages.length - 1 && status === "streaming"}
               onRunQuery={m.role === "assistant" ? handleRunQuery : undefined}
+              sqlValidations={m.role === "assistant" ? sqlValidations.get(m.id) : undefined}
             />
           ))}
 
