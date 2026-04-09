@@ -3,10 +3,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Sparkles, Paperclip, PlayCircle, CheckCircle2, XCircle, Loader2 } from "lucide-react";
+import { Sparkles, Paperclip, PlayCircle, CheckCircle2, XCircle, Loader2, FileBarChart2 } from "lucide-react";
 import { Avatar } from "@/components/ui/avatar";
 import { PdfViewer } from "./pdf-viewer";
 import { QueryResult, QueryResultState } from "./query-result";
+import { GenerateReportModal, ReportFormat } from "./generate-report-modal";
 import type { UIMessage } from "ai";
 
 export type SqlValidationStatus = "idle" | "validating" | "valid" | "invalid";
@@ -18,6 +19,8 @@ interface ChatMessageProps {
   onRunQuery?: (sql: string) => Promise<QueryResultState>;
   /** Map of SQL code string → validation status, populated after response completes */
   sqlValidations?: Map<string, SqlValidationStatus>;
+  /** Called when user confirms report generation for a valid SQL block. */
+  onGenerateReport?: (sql: string, format: ReportFormat) => Promise<void>;
 }
 
 export const SQL_LANGUAGES = new Set(["sql", "tsql", "pgsql", "postgresql", "mysql", "plsql", "sqlite"]);
@@ -37,14 +40,17 @@ function SqlCodeBlock({
   lang,
   code,
   onRunQuery,
+  onGenerateReport,
   validationStatus = "idle",
 }: {
   lang: string;
   code: string;
   onRunQuery?: (sql: string) => Promise<QueryResultState>;
+  onGenerateReport?: (sql: string, format: ReportFormat) => Promise<void>;
   validationStatus?: SqlValidationStatus;
 }) {
   const [result, setResult] = useState<QueryResultState>({ status: "idle" });
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const handleRun = async () => {
     if (!onRunQuery) return;
@@ -55,6 +61,12 @@ function SqlCodeBlock({
     } catch {
       setResult({ status: "error", error: "Failed to execute query." });
     }
+  };
+
+  const handleGenerateReportConfirm = async (format: ReportFormat) => {
+    if (!onGenerateReport) return;
+    await onGenerateReport(code, format);
+    setShowReportModal(false);
   };
 
   const isRunning = result.status === "loading";
@@ -87,6 +99,20 @@ function SqlCodeBlock({
 
         <span className="flex-1" />
 
+        {/* Generate Report button — only shown when query is validated */}
+        {onGenerateReport && validationStatus === "valid" && (
+          <button
+            onClick={() => setShowReportModal(true)}
+            title="Generate a report from this query"
+            className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg
+              text-violet-400 hover:text-violet-300 hover:bg-violet-400/10 active:scale-95
+              transition-all duration-150 select-none cursor-pointer"
+          >
+            <FileBarChart2 className="h-3.5 w-3.5" />
+            Generate Report
+          </button>
+        )}
+
         {onRunQuery && (
           <button
             onClick={handleRun}
@@ -109,6 +135,14 @@ function SqlCodeBlock({
         )}
       </div>
 
+      {/* Report format modal */}
+      {showReportModal && (
+        <GenerateReportModal
+          onConfirm={handleGenerateReportConfirm}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
+
       {/* Code */}
       <SyntaxHighlighter
         style={vscDarkPlus}
@@ -126,7 +160,7 @@ function SqlCodeBlock({
   );
 }
 
-export function ChatMessage({ message, animate = false, onRunQuery, sqlValidations }: ChatMessageProps) {
+export function ChatMessage({ message, animate = false, onRunQuery, sqlValidations, onGenerateReport }: ChatMessageProps) {
   // Track which SQL block index we're rendering (reset each render pass)
   const sqlBlockIndexRef = useRef(0);
   sqlBlockIndexRef.current = 0;
@@ -189,6 +223,7 @@ export function ChatMessage({ message, animate = false, onRunQuery, sqlValidatio
                             lang={lang}
                             code={codeStr}
                             onRunQuery={onRunQuery}
+                            onGenerateReport={onGenerateReport}
                             validationStatus={status}
                           />
                         );

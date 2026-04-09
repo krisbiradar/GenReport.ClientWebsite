@@ -49,6 +49,13 @@ export interface ValidateSqlRequest {
   query: string;
 }
 
+export interface GenerateReportRequest {
+  query: string;
+  databaseConnectionId: string;
+  sessionId?: string;
+  format: "excel" | "pdf";
+}
+
 export enum QueryValidationStatus {
   OK = 1,
   NotReadOnly = 2,
@@ -78,6 +85,10 @@ class ChatService {
 
   async createSession(req: CreateChatSessionRequest) {
     return await this.apiClient.sendHttpPost<ChatSession>(req, "chat/sessions");
+  }
+
+  async generateReport(req: GenerateReportRequest) {
+    return await this.apiClient.sendHttpPost<{ jobId?: string }>(req, "chat/generate-report");
   }
 
   async updateSessionProvider(sessionId: string, req: UpdateSessionProviderRequest) {
