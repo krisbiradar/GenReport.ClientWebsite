@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [isSessionLoading, setIsSessionLoading] = useState<boolean>(false);
   const [isCreatingSession, setIsCreatingSession] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const justCreatedSessionIdRef = useRef<string | null>(null);
 
   const aiModelService = container.get(AiModelService);
   const aiConnectionService = container.get(AiConnectionService);
@@ -102,7 +103,15 @@ export default function ChatPage() {
   });
 
   useEffect(() => {
+    if (justCreatedSessionIdRef.current && justCreatedSessionIdRef.current !== id) {
+      justCreatedSessionIdRef.current = null;
+    }
+
     if (id) {
+      if (justCreatedSessionIdRef.current === id) {
+        return;
+      }
+      
       // Prevent refetching if we just locally created this session and navigated to it
       if (sessionIdRef.current === id && messages.length > 0) return;
 
@@ -135,7 +144,8 @@ export default function ChatPage() {
       setSqlValidations(new Map());
       correctedMsgIdsRef.current.clear();
     }
-  }, [id, chatService, setMessages, stop, messages.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   const isGenerating = status === "submitted" || status === "streaming";
 
@@ -407,6 +417,7 @@ export default function ChatPage() {
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = String(created.id);
+          justCreatedSessionIdRef.current = activeSessionId;
           setSessionId(activeSessionId);
           sessionIdRef.current = activeSessionId;
           navigate(`/chat/${activeSessionId}`, { replace: true });
