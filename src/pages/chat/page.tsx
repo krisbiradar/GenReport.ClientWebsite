@@ -16,6 +16,7 @@ import { AuthState } from "@/state-management/slices/auth-slice";
 import { Button } from "@/components/ui/button";
 import { Database, Cpu } from "lucide-react";
 import type { QueryResultState } from "@/components/chat/query-result";
+import type { ReportFormat } from "@/components/chat/generate-report-modal";
 
 const BASE_URL = import.meta.env.VITE_BASE_URL || "";
 
@@ -401,6 +402,34 @@ export default function ChatPage() {
     }
   }, [chatService]);
 
+  // ── Handle generate report ────────────────────────────────────────────────
+  const handleGenerateReport = useCallback(async (sql: string, format: ReportFormat): Promise<void> => {
+    const dbId = selectedDbIdRef.current;
+    if (!dbId) {
+      showPopup({ title: "No Database Selected", body: "Please select a database before generating a report.", type: "warning" });
+      return;
+    }
+    try {
+      await chatService.generateReport({
+        query: sql,
+        databaseConnectionId: dbId,
+        sessionId: sessionIdRef.current ?? undefined,
+        format,
+      });
+      showPopup({
+        title: "Report Queued",
+        body: `Your ${format === "excel" ? "Excel" : "PDF"} report has been queued and will be ready shortly.`,
+        type: "success",
+      });
+    } catch (err: any) {
+      showPopup({
+        title: "Failed to Queue Report",
+        body: err?.message ?? "An unexpected error occurred. Please try again.",
+        type: "error",
+      });
+    }
+  }, [chatService]);
+
   // ── Handle send ───────────────────────────────────────────────────────────
   const handleSend = async (content: string, files?: UploadedFileData[]) => {
     let activeSessionId = sessionId;
@@ -518,6 +547,7 @@ export default function ChatPage() {
               message={m}
               animate={m.role === "assistant" && i === messages.length - 1 && status === "streaming"}
               onRunQuery={m.role === "assistant" ? handleRunQuery : undefined}
+              onGenerateReport={m.role === "assistant" ? handleGenerateReport : undefined}
               sqlValidations={m.role === "assistant" ? sqlValidations.get(m.id) : undefined}
             />
           ))}
