@@ -116,6 +116,7 @@ export default function ChatPage() {
       // Prevent refetching if we just locally created this session and navigated to it
       if (sessionIdRef.current === id && messages.length > 0) return;
 
+      autoCorrectionCountRef.current = 0;
       setSessionId(id);
       setIsSessionLoading(true);
       
@@ -144,6 +145,7 @@ export default function ChatPage() {
       setMessages([]);
       setSqlValidations(new Map());
       correctedMsgIdsRef.current.clear();
+      autoCorrectionCountRef.current = 0;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -156,6 +158,7 @@ export default function ChatPage() {
   const prevStatusRef = useRef<string>(status);
   // Track message IDs that already triggered auto-correction to prevent infinite loops
   const correctedMsgIdsRef = useRef<Set<string>>(new Set());
+  const autoCorrectionCountRef = useRef<number>(0);
 
   useEffect(() => {
     const prev = prevStatusRef.current;
@@ -244,6 +247,13 @@ export default function ChatPage() {
         // If there are invalid queries, auto-send a correction message
         if (invalidQueries.length > 0) {
           correctedMsgIdsRef.current.add(msgId);
+
+          if (autoCorrectionCountRef.current >= 5) {
+            console.log("Max auto-corrections reached. Stopping to prevent context bloat.");
+            // Optionally, we could show a toast to the user here
+            return;
+          }
+          autoCorrectionCountRef.current += 1;
 
           const errorDetails = invalidQueries
             .map(
@@ -432,6 +442,7 @@ export default function ChatPage() {
 
   // ── Handle send ───────────────────────────────────────────────────────────
   const handleSend = async (content: string, files?: UploadedFileData[]) => {
+    autoCorrectionCountRef.current = 0;
     let activeSessionId = sessionId;
 
     if (!activeSessionId) {
