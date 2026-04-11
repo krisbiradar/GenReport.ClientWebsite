@@ -112,25 +112,25 @@ export default function ChatPage() {
       if (justCreatedSessionIdRef.current === id) {
         return;
       }
-      
+
       // Prevent refetching if we just locally created this session and navigated to it
       if (sessionIdRef.current === id && messages.length > 0) return;
 
       autoCorrectionCountRef.current = 0;
       setSessionId(id);
       setIsSessionLoading(true);
-      
+
       chatService.getSession(id)
         .then((res: any) => {
           const session = res?.successResponse?.data ?? res;
           if (session && session.messages) {
-             const mappedMessages: UIMessage[] = session.messages.map((m: any) => ({
-                id: m.id || crypto.randomUUID(),
-                role: m.role || "assistant",
-                content: m.content || "",
-                createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
-             }));
-             setMessages(mappedMessages);
+            const mappedMessages: UIMessage[] = session.messages.map((m: any) => ({
+              id: m.id || crypto.randomUUID(),
+              role: m.role || "assistant",
+              content: m.content || "",
+              createdAt: m.createdAt ? new Date(m.createdAt) : new Date()
+            }));
+            setMessages(mappedMessages);
           }
         })
         .catch(err => {
@@ -177,6 +177,14 @@ export default function ChatPage() {
 
       // Don't re-validate if we already auto-corrected this message
       if (correctedMsgIdsRef.current.has(msgId)) return;
+
+      // Guard: check the limit SYNCHRONOUSLY before any async work starts.
+      // This prevents two concurrent validation runs from both passing the
+      // guard before either has had a chance to increment the counter.
+      if (autoCorrectionCountRef.current >= 5) {
+        console.log("Max auto-corrections reached. Stopping to prevent context bloat.");
+        return;
+      }
 
       const content = getTextContent(lastAssistantMsg);
 
@@ -247,12 +255,6 @@ export default function ChatPage() {
         // If there are invalid queries, auto-send a correction message
         if (invalidQueries.length > 0) {
           correctedMsgIdsRef.current.add(msgId);
-
-          if (autoCorrectionCountRef.current >= 5) {
-            console.log("Max auto-corrections reached. Stopping to prevent context bloat.");
-            // Optionally, we could show a toast to the user here
-            return;
-          }
           autoCorrectionCountRef.current += 1;
 
           const errorDetails = invalidQueries
@@ -297,8 +299,8 @@ export default function ChatPage() {
         const res: any = await connectionService.getConnections();
         const data = res.successResponse?.data ?? res;
         if (Array.isArray(data)) {
-           setDatabases(data);
-           if (data.length > 0) setSelectedDbId(String(data[0].id));
+          setDatabases(data);
+          if (data.length > 0) setSelectedDbId(String(data[0].id));
         }
       } catch {
         setDatabases([]);
@@ -487,7 +489,7 @@ export default function ChatPage() {
       <div className="flex flex-col h-full w-full bg-background items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
         <div className="max-w-md w-full flex flex-col items-center text-center space-y-6 bg-muted/20 p-8 rounded-3xl border shadow-sm">
           <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 shadow-inner">
-             <Cpu className="h-8 w-8" />
+            <Cpu className="h-8 w-8" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight">AI Connection Required</h2>
@@ -508,7 +510,7 @@ export default function ChatPage() {
       <div className="flex flex-col h-full w-full bg-background items-center justify-center p-6 animate-in fade-in zoom-in-95 duration-500">
         <div className="max-w-md w-full flex flex-col items-center text-center space-y-6 bg-muted/20 p-8 rounded-3xl border shadow-sm">
           <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-2 shadow-inner">
-             <Database className="h-8 w-8" />
+            <Database className="h-8 w-8" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-semibold tracking-tight">Database Missing</h2>
@@ -541,11 +543,11 @@ export default function ChatPage() {
         )}
 
         {messages.length === 0 && isSessionLoading && (
-           <div className="flex w-full items-center justify-center h-48 mt-8">
-             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "0ms" }} />
-             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "150ms" }} />
-             <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "300ms" }} />
-           </div>
+          <div className="flex w-full items-center justify-center h-48 mt-8">
+            <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "0ms" }} />
+            <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "150ms" }} />
+            <div className="h-3 w-3 bg-primary/60 rounded-full animate-bounce mx-1" style={{ animationDelay: "300ms" }} />
+          </div>
         )}
       </div>
 
