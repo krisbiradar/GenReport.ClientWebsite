@@ -15,7 +15,7 @@ export default function HomePage() {
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
   const navigate = useNavigate();
 
-  const dashboardService = container.get(DashboardService);
+  const dashboardService = React.useMemo(() => container.get(DashboardService), []);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
