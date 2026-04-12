@@ -43,24 +43,24 @@ export function GenerateReportModal({ onConfirm, onClose }: GenerateReportModalP
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-sm mx-4 bg-card rounded-2xl shadow-2xl border border-border/60 overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md mx-4 bg-card rounded-2xl shadow-2xl border border-border/60 overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4">
+        <div className="flex items-center justify-between px-7 pt-7 pb-5">
           <div>
-            <h2 className="text-base font-semibold tracking-tight">Generate Report</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Choose an output format for your report</p>
+            <h2 className="text-lg font-semibold tracking-tight">Generate Report</h2>
+            <p className="text-sm text-muted-foreground mt-1">Choose an output format for your report</p>
           </div>
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Format options */}
-        <div className="px-6 pb-6 flex flex-col gap-3">
+        <div className="px-7 pb-7 flex flex-col gap-3">
           {formatOptions.map((opt) => {
             const isActive = selected === opt.id;
             return (
@@ -69,7 +69,7 @@ export function GenerateReportModal({ onConfirm, onClose }: GenerateReportModalP
                 onClick={() => setSelected(opt.id)}
                 disabled={isSubmitting}
                 className={cn(
-                  "flex items-center gap-4 w-full rounded-xl border-2 px-4 py-3.5 text-left transition-all duration-150 select-none",
+                  "flex items-center gap-5 w-full rounded-xl border-2 px-5 py-4 text-left transition-all duration-150 select-none",
                   isActive
                     ? opt.accent + " border-opacity-80"
                     : "border-border/40 bg-muted/20 hover:bg-muted/40 hover:border-border/70"
@@ -87,7 +87,7 @@ export function GenerateReportModal({ onConfirm, onClose }: GenerateReportModalP
                 {/* Selection ring */}
                 <div className="ml-auto">
                   <div className={cn(
-                    "h-4 w-4 rounded-full border-2 transition-all",
+                    "h-5 w-5 rounded-full border-2 transition-all",
                     isActive
                       ? opt.accent.split(" ")[0].replace("text-", "border-") + " bg-current"
                       : "border-border/50"
@@ -101,7 +101,7 @@ export function GenerateReportModal({ onConfirm, onClose }: GenerateReportModalP
           <Button
             onClick={handleConfirm}
             disabled={!selected || isSubmitting}
-            className="w-full mt-2 h-10 rounded-xl font-medium text-sm"
+            className="w-full mt-3 h-11 rounded-xl font-medium text-sm"
           >
             {isSubmitting ? (
               <>

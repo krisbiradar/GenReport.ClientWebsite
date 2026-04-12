@@ -422,12 +422,24 @@ export default function ChatPage() {
       return;
     }
     try {
-      await chatService.generateReport({
+      const res: any = await chatService.generateReport({
         query: sql,
         databaseConnectionId: dbId,
         sessionId: sessionIdRef.current ?? undefined,
         format,
       });
+
+      // ApiClient swallows Axios errors and returns an HttpResponse with errorResponse set.
+      // We must check this explicitly — a resolved promise does NOT mean success here.
+      if (res?.errorResponse) {
+        const errMsg =
+          res.errorResponse?.message ||
+          res.errorResponse?.errors?.[0] ||
+          "An unexpected error occurred. Please try again.";
+        showPopup({ title: "Failed to Queue Report", body: errMsg, type: "error" });
+        return;
+      }
+
       showPopup({
         title: "Report Queued",
         body: `Your ${format === "excel" ? "Excel" : "PDF"} report has been queued and will be ready shortly.`,
