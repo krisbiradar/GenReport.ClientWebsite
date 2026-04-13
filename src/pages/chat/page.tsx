@@ -468,6 +468,21 @@ export default function ChatPage() {
           databaseConnectionId: selectedDbId || undefined,
           title: content.slice(0, 80) || "New Conversation",
         });
+
+        // The API client resolves even on 4xx — check errorResponse explicitly
+        if (res?.errorResponse) {
+          const errMsg =
+            res.errorResponse?.message ||
+            res.errorResponse?.errors?.[0] ||
+            "Failed to start a session. Please check your configuration and try again.";
+          showPopup({
+            title: "Cannot Start Session",
+            body: errMsg,
+            type: "error",
+          });
+          return;
+        }
+
         const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = String(created.id);
@@ -476,8 +491,14 @@ export default function ChatPage() {
           sessionIdRef.current = activeSessionId;
           navigate(`/chat/${activeSessionId}`, { replace: true });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to create chat session", err);
+        showPopup({
+          title: "Cannot Start Session",
+          body: err?.message ?? "An unexpected error occurred. Please try again.",
+          type: "error",
+        });
+        return;
       } finally {
         setIsCreatingSession(false);
       }

@@ -29,7 +29,8 @@ class DashboardService {
   }
 
   async getRecentSessions() {
-    return await this.apiClient.sendHttpGet<RecentSession[]>("dashboard/recent-sessions");
+    const params = new URLSearchParams({ limit: "10" });
+    return await this.apiClient.sendHttpGet<RecentSession[]>("dashboard/recent-sessions", params);
   }
 }
 
