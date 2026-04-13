@@ -35,6 +35,7 @@ export default function HomePage() {
     const fetchStats = async () => {
       setStatsLoading(true);
       try {
+        const res: any = await dashboardService.getStats();
         const data: DashboardStats | undefined = res?.successResponse?.data;
         if (mounted && data) setStats(data);
       } catch {

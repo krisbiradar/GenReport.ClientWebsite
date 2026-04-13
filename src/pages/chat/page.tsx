@@ -484,7 +484,6 @@ export default function ChatPage() {
         }
 
         const created = res?.successResponse?.data ?? res;
-        const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = String(created.id);
           justCreatedSessionIdRef.current = activeSessionId;
