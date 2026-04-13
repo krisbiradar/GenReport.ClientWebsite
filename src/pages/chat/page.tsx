@@ -484,12 +484,20 @@ export default function ChatPage() {
         }
 
         const created = res?.successResponse?.data ?? res;
+        const created = res?.successResponse?.data ?? res;
         if (created?.id) {
           activeSessionId = String(created.id);
           justCreatedSessionIdRef.current = activeSessionId;
           setSessionId(activeSessionId);
           sessionIdRef.current = activeSessionId;
           navigate(`/chat/${activeSessionId}`, { replace: true });
+        } else {
+          showPopup({
+            title: "Cannot Start Session",
+            body: "Session was created but no ID was returned. Please try again.",
+            type: "error",
+          });
+          return;
         }
       } catch (err: any) {
         console.error("Failed to create chat session", err);
