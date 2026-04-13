@@ -15,7 +15,7 @@ export default function HomePage() {
   const firstName = useSelector((state: { auth: AuthState }) => state.auth.firstName);
   const navigate = useNavigate();
 
-  const dashboardService = container.get(DashboardService);
+  const dashboardService = React.useMemo(() => container.get(DashboardService), []);
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -35,8 +35,7 @@ export default function HomePage() {
     const fetchStats = async () => {
       setStatsLoading(true);
       try {
-        const res: any = await dashboardService.getStats();
-        const data: DashboardStats = res?.successResponse?.data ?? res;
+        const data: DashboardStats | undefined = res?.successResponse?.data;
         if (mounted && data) setStats(data);
       } catch {
         // leave as null — cards will show "—"
