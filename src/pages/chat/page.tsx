@@ -224,6 +224,7 @@ export default function ChatPage() {
 
       Promise.allSettled(validationPromises).then((results) => {
         const invalidQueries: { sql: string; error: string }[] = [];
+        let hasAnyValid = false;
 
         for (const result of results) {
           if (result.status === "fulfilled") {
@@ -235,7 +236,9 @@ export default function ChatPage() {
               next.set(msgId, msgMap);
               return next;
             });
-            if (!isValid) {
+            if (isValid) {
+              hasAnyValid = true;
+            } else {
               invalidQueries.push({ sql, error: error || "Query validation failed" });
             }
           } else {
@@ -252,8 +255,9 @@ export default function ChatPage() {
           }
         }
 
-        // If there are invalid queries, auto-send a correction message
-        if (invalidQueries.length > 0) {
+        // Only auto-send a correction if there are invalid queries AND no valid query was found.
+        // If at least one query is valid, we stop — the model got something right.
+        if (invalidQueries.length > 0 && !hasAnyValid) {
           correctedMsgIdsRef.current.add(msgId);
           autoCorrectionCountRef.current += 1;
 

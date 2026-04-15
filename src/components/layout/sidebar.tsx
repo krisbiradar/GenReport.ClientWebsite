@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronLeft, LogOut, Menu, MessageSquare, Plus, Clock } from 'lucide-react';
+import { ChevronLeft, LayoutDashboard, LogOut, Menu, MessageSquare, Plus, Clock } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { cn } from '@/lib/utils';
@@ -201,6 +201,21 @@ export function Sidebar({ isCollapsed, setIsCollapsed }: SidebarProps) {
             </div>
           )}
           <ul className="space-y-1 px-3">
+            {/* Static Dashboard link — always visible */}
+            <li>
+              <Link
+                to="/"
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all hover:bg-primary/10 hover:text-primary',
+                  location.pathname === '/' ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+                  isCollapsed && 'justify-center px-0'
+                )}
+                title={isCollapsed ? 'Dashboard' : undefined}
+              >
+                <LayoutDashboard className={cn('h-5 w-5', location.pathname === '/' ? 'text-primary' : 'text-muted-foreground')} />
+                {!isCollapsed && <span className="animate-fadeIn">Dashboard</span>}
+              </Link>
+            </li>
 
             {items.map((item: SidebarItem) => {
               const path = getRouteForSidebarItem(item.title);
