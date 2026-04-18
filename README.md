@@ -1,5 +1,7 @@
 # GenReport Client
 
+<img width="1920" height="1080" alt="Screenshot 2026-04-18 at 07 07 14" src="https://github.com/user-attachments/assets/abae7e01-2659-4af7-b4af-6762e3375d8f" />
+
 GenReport is an advanced web application providing AI-driven reporting capabilities against database connections, accessible entirely from a structured chat interface. 
 
 ## Technology Stack
